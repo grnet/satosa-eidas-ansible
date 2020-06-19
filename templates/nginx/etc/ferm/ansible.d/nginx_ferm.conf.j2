@@ -1,0 +1,8 @@
+{{ managed_by_ansible | comment}}
+
+{% if nginx__http_port | d(false) %}
+&SERVICE(tcp, {{ nginx__http_port }});
+{% endif %}
+{% if nginx__https_port | d(false) %}
+&SERVICE(tcp, {{ nginx__https_port }});
+{% endif %}

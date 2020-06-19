@@ -1,0 +1,61 @@
+---
+
+- name: Ensure that the metadata folders exist
+  file:
+    path: "{{ satosa__data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+  with_items:
+    - "{{ satosa__certs_dir }}"
+    - "{{ satosa__local_metadata_dir }}"
+
+- name: Gather local metadata
+  find:
+    path: "{{ satosa__data_dir }}/{{ satosa__local_metadata_dir }}"
+  register: current_sp_metadata
+
+- name: Remove obsolete local metadata
+  file:
+    path: "{{ satosa__data_dir }}/{{ satosa__local_metadata_dir }}/{{ item }}"
+    state: absent
+  with_items: "{{ current_sp_metadata.files | map(attribute='path') | map('basename') | list | difference(satosa__local_metadata) }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Copy local metadata
+  copy:
+    src: metadata/{{ item }}
+    dest: "{{ satosa__data_dir }}/{{ satosa__local_metadata_dir }}"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+  with_items: "{{ satosa__local_metadata }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Gather metadata certs
+  find:
+    path: "{{ satosa__data_dir }}/{{ satosa__certs_dir }}"
+  register: current_metadata_certs
+
+- name: Remove obsolete metadata certs
+  file:
+    path: "{{ satosa__data_dir }}/{{ satosa__certs_dir }}/{{ item }}"
+    state: absent
+  with_items: "{{ current_metadata_certs.files | map(attribute='path') | map('basename') | list | difference(satosa__metadata_certs) }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Copy metadata certs
+  copy:
+    src: "{{ satosa__external_certs_src }}/{{ item }}"
+    dest: "{{ satosa__data_dir }}/{{ satosa__certs_dir }}"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+  with_items: "{{ satosa__metadata_certs }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service

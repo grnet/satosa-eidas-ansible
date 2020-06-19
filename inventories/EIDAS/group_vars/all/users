@@ -1,0 +1,17 @@
+# Remove debian user from debian cloud init image
+user_debian:
+  name: debian
+  state: absent
+  remove: true
+  force: true
+
+# User profile configuration
+
+users_devs:
+
+base_users_to_remove:
+  - "{{ user_debian }}"
+
+base_users__merged_users_to_merge: '{{ base_users_to_remove
+                                     + users_admins
+                                     + users_devs }}'

@@ -1,0 +1,17 @@
+{{ ansible_managed | comment }}
+
+module: satosa.micro_services.attribute_processor.AttributeProcessor
+name: {{ item.name | d("AttributeProcessor") }}
+config:
+  process:
+{% for process in item.config.processes %}
+    - attribute: {{ process.attribute }}
+      processors:
+{%   for processor in process.processors %}
+        - name: {{ processor.name }}
+          module: {{ processor.module }}
+{%     for key, value in processor.kwargs.items() %}
+          {{ key }}: {{ value }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

@@ -1,0 +1,38 @@
+---
+- name: Install required packages
+  apt:
+    name: python-openssl
+
+- name: Ensure that the certs folder exist
+  file:
+    path: "{{ openssl_certificate__dir }}"
+    state: directory
+    owner: "{{ openssl_certificate__system_user_name }}"
+    group: "{{ openssl_certificate__system_group_name }}"
+    mode: 0755
+
+- name: Generate an OpenSSL private key.
+  openssl_privatekey:
+    path: "{{ openssl_certificate__dir }}/{{ openssl_certificate__name }}.key"
+    owner: "{{ openssl_certificate__system_user_name }}"
+    group: "{{ openssl_certificate__system_group_name }}"
+    mode: 0640
+
+- name: Generate an OpenSSL CSR
+  openssl_csr:
+    path: "/etc/ssl/private/ansible_{{ openssl_certificate__name }}.csr"
+    privatekey_path: "{{ openssl_certificate__dir }}/{{ openssl_certificate__name }}.key"
+    common_name: "{{ openssl_certificate__common_name }}"
+    owner: "{{ openssl_certificate__system_user_name }}"
+    group: "{{ openssl_certificate__system_group_name }}"
+    mode: 0640
+
+- name: Generate a Self Signed OpenSSL certificate.
+  openssl_certificate:
+    path: "{{ openssl_certificate__dir }}/{{ openssl_certificate__name }}.crt"
+    privatekey_path: "{{ openssl_certificate__dir }}/{{ openssl_certificate__name }}.key"
+    csr_path: "/etc/ssl/private/ansible_{{ openssl_certificate__name }}.csr"
+    provider: selfsigned
+    owner: "{{ openssl_certificate__system_user_name }}"
+    group: "{{ openssl_certificate__system_group_name }}"
+    mode: 0640

@@ -1,0 +1,7 @@
+{{ managed_by_ansible | comment}}
+
+{% for var_name, ips in (ferm__def_variables.items() | sort) %}
+{%-  if ips -%}
+@def ${{ var_name }} = ({{ ips | join(' ') }});
+{%  endif %}
+{% endfor %}

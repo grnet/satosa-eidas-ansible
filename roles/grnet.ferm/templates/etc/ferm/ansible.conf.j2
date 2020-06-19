@@ -1,0 +1,7 @@
+{{ managed_by_ansible | comment}}
+
+@include '{{ferm__defs_subdir}}/';
+@include '{{ferm__ansible_rules_subdir}}/';
+{% for dir in ferm__rules_dirs %}
+@include '{{ ferm__ansible_rules_subdir }}/{{dir}}/';
+{% endfor %}

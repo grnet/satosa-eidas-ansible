@@ -1,0 +1,32 @@
+{{ ansible_managed | comment }}
+
+module: satosa.backends.openid_connect.OpenIDConnectBackend
+name: {{ item.name }}
+config:
+  provider_metadata:
+    issuer: {{ item.provider_metadata.issuer }}
+{% if item.provider_metadata.authorization_endpoint | d(false) %}
+    authorization_endpoint: {{ item.provider_metadata.authorization_endpoint }}
+{% endif %}
+  client:
+    verify_ssl: yes
+    auth_req_params:
+      response_type: {{ item.client.auth_req_params.response_type | d('code') }}
+      scope:
+{% for contact in item.client.auth_req_params.scopes | d(['openid']) %}
+        - {{ contact }}
+{% endfor %}
+    client_metadata:
+{% if item.client.client_metadata.client_id | d(false) %}
+      client_id: {{ item.client.client_metadata.client_id }}
+{% endif %}
+      application_type: {{ item.client.client_metadata.application_type | d('web') }}
+      contacts:
+{% for contact in item.client.client_metadata.contacts %}
+        - {{ contact }}
+{% endfor %}
+      redirect_uris:
+{% for redirect_uri in item.client.client_metadata.redirect_uris | d(['<base_url>/<name>']) %}
+        - {{ redirect_uri }}
+{% endfor %}
+      subject_type: {{ item.client.client_metadata.subject_type | d('public') }}

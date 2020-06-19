@@ -1,0 +1,129 @@
+---
+
+- name: Ensure that the configuration folders exist
+  file:
+    path: "{{ satosa__data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0755
+  with_items:
+    - "{{ satosa__plugins_dir }}"
+    - "{{ satosa__backend_modules }}"
+    - "{{ satosa__frontend_modules }}"
+    - "{{ satosa__micro_services_modules }}"
+    - "{{ satosa__satosa_certs_dir }}"
+
+- name: Configure proxy_conf
+  template:
+    src: etc/satosa/proxy_conf.yaml.j2
+    dest: "{{ satosa__data_dir }}/proxy_conf.yaml"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0644
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Configure internal_attributes
+  template:
+    src: etc/satosa/internal_attributes.yaml.j2
+    dest: "{{ satosa__data_dir }}/internal_attributes.yaml"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0644
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Gather current frontend configuration files
+  find:
+    path: "{{ satosa__data_dir }}/{{ satosa__frontend_modules }}"
+  register: current_frontends
+
+- name: Remove obsolete frontend configuration files
+  file:
+    path: "{{ satosa__data_dir }}/{{ satosa__frontend_modules }}/{{ item }}"
+    state: absent
+  with_items: "{{ current_frontends.files | map(attribute='path') | map('basename') | list | difference(satosa__frontends|map(attribute='conf_file_name')|list) }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Configure frontend modules configuration files
+  template:
+    src: "{{ item.template_file }}"
+    dest: "{{ satosa__data_dir }}/{{ satosa__frontend_modules }}/{{ item.conf_file_name }}"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+  with_items:
+    "{{ satosa__frontends }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Gather current backend configuration files
+  find:
+    path: "{{ satosa__data_dir }}/{{ satosa__backend_modules }}"
+  register: current_backends
+
+- name: Remove obsolete backend configuration files
+  file:
+    path: "{{ satosa__data_dir }}/{{ satosa__backend_modules }}/{{ item }}"
+    state: absent
+  with_items: "{{ current_backends.files | map(attribute='path') | map('basename') | list | difference(satosa__backends|map(attribute='conf_file_name')|list) }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Configure backend modules configuration files
+  template:
+    src: "{{ item.template_file }}"
+    dest: "{{ satosa__data_dir }}/{{ satosa__backend_modules }}/{{ item.conf_file_name }}"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+  with_items:
+    "{{ satosa__backends }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Gather current micro_services configuration files
+  find:
+    path: "{{ satosa__data_dir }}/{{ satosa__micro_services_modules }}"
+  register: current_micro_services
+
+- name: Remove obsolete micro_services configuration files
+  file:
+    path: "{{ satosa__data_dir }}/{{ satosa__micro_services_modules }}/{{ item }}"
+    state: absent
+  with_items: "{{ current_micro_services.files | map(attribute='path') | map('basename') | list | difference(satosa__micro_services|map(attribute='conf_file_name')|list) }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Configure micro_services configuration files
+  template:
+    src: "{{ item.template_file }}"
+    dest: "{{ satosa__data_dir }}/{{ satosa__micro_services_modules }}/{{ item.conf_file_name }}"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+  when: satosa__micro_services | d(False)
+  with_items:
+    "{{ satosa__micro_services }}"
+  notify:
+    - Restart satosa docker
+    - Restart satosa service
+
+- name: Upload the client_db_path
+  copy:
+    src: "{{ satosa__oidc_client_db_path.src }}"
+    dest: "{{ satosa__data_dir }}/{{ satosa__oidc_client_db_path.dest }}"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0644
+  when: (satosa__oidc_client_db_path.src | d(False)) and
+     (satosa__oidc_client_db_path.dest | d(False))
+  notify:
+    - Restart satosa docker
+    - Restart satosa service

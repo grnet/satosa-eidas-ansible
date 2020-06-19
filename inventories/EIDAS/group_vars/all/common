@@ -1,0 +1,45 @@
+managed_by_ansible: "This file is managed by ansible. Do not modify it!"
+
+# Mandatory apt packages for all roles
+apt__base_packages:
+  - apt-transport-https
+  - ca-certificates
+  - zsh
+  - man
+
+core__ansible_control_user_name: 'ansible'
+core__add_root_key: True
+core__ansible_control_user_ssh_key:
+
+users__no_log: false
+
+# Useful packages that all nodes should have
+common_apt__role_packages_to_merge:
+  - htop
+  - git
+  - vim
+
+debian_apt__role_packages_to_merge:
+  - debian-goodies
+
+
+# TODO: Fixme, temp configuration
+ssh_use_pam: true
+ssh_compression: true
+network_ipv6_enable: true
+ssh_listen_to: ['::', '0.0.0.0']
+sftp_enabled: true
+
+# Test conf
+unattended_upgrades__mail_only_on_error: False
+
+# Generic group with ssh access
+ssh__allow_group: "sshgroup"
+ssh_users__merged_groups_to_merge:
+  - name: '{{ ssh__allow_group }}'
+    system: true
+
+# Admins should not be locked out!
+ssh__allow_groups: "{{ core__admin_group }} {{ ssh__allow_group }}"
+
+ssh_client_alive_interval: 0

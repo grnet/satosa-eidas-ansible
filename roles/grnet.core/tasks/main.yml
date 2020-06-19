@@ -1,0 +1,56 @@
+# NOTE: This should not depend on the merged_vars functionality.
+
+- name: Add root_authorized_key to root
+  authorized_key:
+    user: root
+    state: present
+    exclusive: yes # Clean up everything else!
+    key: '{{ core__root_ssh_key }}'
+  when: core__add_root_key
+
+- name: Add admin group
+  group:
+    name: "{{ core__admin_group }}"
+    state: present
+    system: yes
+
+- name: Add passwordless sudo for admin group
+  template:
+    src: templates/etc/sudoers.d/core_admin_group.j2
+    dest: /etc/sudoers.d/admins
+    owner: 'root'
+    group: 'root'
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+- block:
+    - name: Add ansible control user
+      user:
+        name: '{{ core__ansible_control_user_name }}'
+        groups: '{{ core__admin_group }}'
+        # Set null password. Only for remote SSH logins or via su
+        password: ''
+        update_password: always
+        state: present
+        system: yes
+        # TODO: create home under /var/sth with strict permissions. Also need to check authorized_keys location in sshd
+        # TODO: stricter home permissions for this user
+        create_home: yes
+        shell: /bin/bash
+
+    - name: Add ansible control user ssh key
+      authorized_key:
+        user: '{{ core__ansible_control_user_name }}'
+        exclusive: no
+        state: present
+        key: '{{ item }}'
+      with_items: "{{ core__ansible_control_user_ssh_key}} "
+  when: core__add_ansible_control_user
+  # TODO: Remove on false?
+
+- name: Set timezone
+  timezone:
+    name: '{{ core__timezone }}'
+  when: core__timezone is defined and core__timezone != ''
+
+# vim: ft=ansible

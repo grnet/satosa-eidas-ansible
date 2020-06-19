@@ -1,0 +1,19 @@
+
+apt__gpg_base_dir: "/etc/apt/trusted.gpg.d"
+apt__gpg_ansible_prefix: "ansible_"
+
+apt__sources_base_dir: "/etc/apt/sources.list.d"
+apt__sources_ansible_prefix: "ansible_"
+
+apt__preferences_base_dir: "/etc/apt/preferences.d"
+apt__preferences_ansible_prefix: "ansible_"
+
+apt_merge_vars__dict_vars_list:
+  - 'apt__key_files'
+  - 'apt__repositories'
+  - 'apt__preferences'
+
+apt_merge_vars__list_vars_list:
+  - 'apt__role_packages'
+
+apt__base_packages: []

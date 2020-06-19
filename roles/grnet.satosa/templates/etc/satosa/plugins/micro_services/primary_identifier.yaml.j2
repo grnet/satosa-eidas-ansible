@@ -1,0 +1,60 @@
+{{ ansible_managed | comment }}
+
+module: satosa.micro_services.primary_identifier.PrimaryIdentifier
+name: {{ item.name | d("PrimaryIdentifier") }}
+config:
+{% for entity, conf in item.config.items() %}
+{%   if entity != "" %}
+  {{ entity }}:
+{%     if conf.ordered_identifier_candidates is defined %}
+    ordered_identifier_candidates:
+{%       for ordered_identifier_candidate in conf.ordered_identifier_candidates %}
+      - attribute_names: {{ ordered_identifier_candidate.attribute_names }}
+{%         if conf.name_id_format is defined %}
+        name_id_format: {{ ordered_identifier_candidate.name_id_format }}
+{%         endif %}
+{%         if conf.add_scope is defined %}
+        add_scope: {{ ordered_identifier_candidate.add_scope }}
+{%         endif %}
+{%       endfor %}
+{%     endif %}
+{%     if conf.primary_identifier is defined %}
+    primary_identifier: {{ conf.primary_identifier }}
+{%     endif %}
+{%     if conf.clear_input_attributes is defined %}
+    clear_input_attributes: {{ conf.clear_input_attributes }}
+{%     endif %}
+{%     if conf.ignore is defined %}
+    ignore: {{ conf.ignore }}
+{%     endif %}
+{%     if conf.on_error is defined %}
+    on_error: {{ conf.on_error }}
+{%     endif %}
+{%   else %}
+{# Default #}
+{%     if conf.ordered_identifier_candidates is defined %}
+  ordered_identifier_candidates:
+{%       for ordered_identifier_candidate in conf.ordered_identifier_candidates %}
+    attribute_names: {{ ordered_identifier_candidate.attribute_names }}
+{%         if conf.name_id_format is defined %}
+    name_id_format: {{ ordered_identifier_candidate.name_id_format }}
+{%         endif %}
+{%         if conf.add_scope is defined %}
+    add_scope: {{ ordered_identifier_candidate.add_scope }}
+{%         endif %}
+{%       endfor %}
+{%     endif %}
+{%     if conf.primary_identifier is defined %}
+  primary_identifier: {{ conf.primary_identifier }}
+{%     endif %}
+{%     if conf.clear_input_attributes is defined %}
+  clear_input_attributes: {{ conf.clear_input_attributes }}
+{%     endif %}
+{%     if conf.ignore is defined %}
+  ignore: {{ conf.ignore }}
+{%     endif %}
+{%     if conf.on_error is defined %}
+  on_error: {{ conf.on_error }}
+{%     endif %}
+{%   endif %}
+{% endfor %}

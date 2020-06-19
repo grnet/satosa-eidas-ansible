@@ -1,0 +1,13 @@
+---
+
+certbot__domain: "{{ inventory_hostname }}"
+certbot__email: noreply@admin.grnet.gr
+certbot__challenge_location: /var/www/letsencrypt
+
+# Use nginx as webserver
+certbot__use_nginx: false
+# Use certbot's standalone webserver
+certbot__standalone: true
+
+certbot_apt__role_packages_to_merge:
+  - certbot

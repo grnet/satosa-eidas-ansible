@@ -1,0 +1,14 @@
+{{ managed_by_ansible | comment }}
+
+{{ logging__log_file }} {
+    rotate 7
+    daily
+    notifempty
+    missingok
+    dateext
+    delaycompress
+    compress
+    postrotate
+            reload rsyslog >/dev/null 2>&1 || true
+    endscript
+}

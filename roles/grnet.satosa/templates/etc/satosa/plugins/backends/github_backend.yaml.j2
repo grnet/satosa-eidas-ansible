@@ -1,0 +1,34 @@
+{{ ansible_managed | comment }}
+
+module: satosa.backends.github.GitHubBackend
+name: {{ item.name }}
+config:
+  authz_page: {{ item.authz_path | d('<name>/auth/callback') }}
+  base_url: {{ item.base_url  | d('<base_url>') }}
+  client_config:
+    client_id: {{ item.client_id }}
+  client_secret: {{ item.client_secret }}
+  scope:
+{% for scope in item.scopes | d(['user']) %}
+    - {{ scope }}
+{% endfor %}
+  response_type: {{ item.response_type | d('code') }}
+  allow_signup: {{ item.allow_signup | d(false) }}
+  server_info: {
+    authorization_endpoint: 'http://github.com/login/oauth/authorize',
+    token_endpoint: 'https://github.com/login/oauth/access_token',
+    user_info: 'https://api.github.com/user'
+  }
+  entity_info:
+    organization:
+      display_name:
+      - ["GitHub", "en"]
+      name:
+      - ["GitHub", "en"]
+      url:
+      - ["https://www.github.com/", "en"]
+    ui_info:
+      description:
+      - ["GitHub oauth", "en"]
+      display_name:
+      - ["GitHub", "en"]

@@ -1,0 +1,7 @@
+{
+  "client_id": {
+    "redirect_uris": ["https://path.to/redirect/uri"],
+    "response_types": ["code"],
+    "client_secret": "client_secret"
+  },
+}

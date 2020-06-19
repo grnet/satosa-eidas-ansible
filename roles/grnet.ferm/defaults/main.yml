@@ -1,0 +1,41 @@
+ferm__enabled: True
+ferm__base_packages: [ 'ferm' ]
+
+ferm_merge_vars__list_vars_list:
+  - 'ferm__rules_dirs'
+
+ferm_merge_vars__dict_vars_list:
+  - 'ferm__rules_templates'
+  - 'ferm__defs_templates'
+  - 'ferm__def_variables'
+
+ferm_apt__role_packages_to_merge: [ 'ferm' ]
+
+
+ferm__dir_group: root
+ferm__base_dir: /etc/ferm
+ferm__ansible_rules_subdir: ansible.d
+ferm__ansible_rules_dir: "{{ferm__base_dir}}/{{ferm__ansible_rules_subdir}}"
+ferm__manual_rules_subdir: manual.d
+ferm__manual_rules_dir: "{{ferm__base_dir}}/{{ferm__manual_rules_subdir}}"
+ferm__defs_subdir: defs.d
+ferm__defs_dir: "{{ ferm__base_dir }}/{{ ferm__defs_subdir }}"
+ferm__ansible_include: ansible.conf
+
+ferm__rules_dirs: []
+ferm__def_variables: {}
+
+default_ferm__defs_templates_to_merge:
+  '00-base.conf':
+    template: '.{{ferm__defs_dir}}/00-base.conf.j2'
+  '02-hosts.conf':
+    template: '.{{ferm__defs_dir}}/02-hosts.conf.j2'
+
+default_ferm__rules_templates_to_merge:
+  '00-base.conf':
+    template: '.{{ferm__ansible_rules_dir}}/00-base.conf.j2'
+
+ferm__ssh_access_v4: []
+ferm__ssh_access_v6: []
+
+ferm__with_puppet: false

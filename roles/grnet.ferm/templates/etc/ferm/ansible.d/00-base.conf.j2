@@ -1,0 +1,13 @@
+{{ managed_by_ansible | comment}}
+{% if ferm__ssh_access_v4|length == 0 and ferm__ssh_access_v6|length == 0 %}
+# Do not lose SSH access. Perhaps this should be more restricted by
+# the ansible deployer
+&SERVICE(tcp, ssh);
+{% else %}
+{% for ipv4 in ferm__ssh_access_v4 %}
+&R_V4_SERVICE(tcp, ssh, {{ ipv4 }});
+{% endfor %}
+{% for ipv6 in ferm__ssh_access_v6 %}
+&R_V6_SERVICE(tcp, ssh, {{ ipv6 }});
+{% endfor %}
+{% endif %}

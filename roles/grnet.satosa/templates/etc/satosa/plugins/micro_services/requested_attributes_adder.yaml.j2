@@ -1,0 +1,9 @@
+{{ ansible_managed | comment }}
+
+module: satosa.micro_services.requested_attributes_adder.RequestedAttributesAdder
+name: {{ item.name | d("RequestedAttributesAdder") }}
+config:
+    attributes_mapping:
+{% for key, value in item.config.attributes_mapping.items() %}
+        {{ key }}: {{ value | list }}
+{% endfor %}

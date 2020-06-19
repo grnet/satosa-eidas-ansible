@@ -1,0 +1,203 @@
+---
+
+satosa__run_docker: True
+satosa__run_service: False
+satosa__docker_image_name: registry.docker.grnet.gr/eid-proxy/satosa:408f1355
+satosa__docker_registry_login: true
+satosa__docker_registry: registry.docker.grnet.gr
+
+satosa__docker_env_variables:
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+  DATA_DIR: "{{ satosa__docker_data_dir }}"
+  METADATA_DIR: "{{ satosa__docker_data_dir }}/{{ satosa__docker_satosa_metadata }}"
+  PROXY_PORT: "{{ satosa__docker_container_port }}"
+  OPTION_DATA_DIR: "{{ satosa__data_dir }}"
+
+
+satosa__oidc_client_db_path:
+  src: common/satosa/oidc_client_db.json
+  dest: oidc_client_db.json
+
+satosa__logging_level: DEBUG
+
+satosa__create_certificates:
+  - name: "{{ satosa__frontends_cert_name }}"
+  - name: "{{ satosa__backends_cert_name }}"
+  - name: frontend_oidc
+  - name: backends_metadata
+
+satosa__upload_html_folder: true
+satosa__html_folder_src: common/satosa/html/*
+
+satosa__frontends:
+  - template_file: etc/satosa/plugins/frontends/saml2_frontend.yaml.j2
+    conf_file_name: saml2_frontend.yaml
+    name: Saml2IDP
+    idp_config:
+      include_encryption_keypairs: true
+      organization:
+        display_name:
+        name:
+        url: "{{ satosa__base_url }}"
+      contact_person:
+        - contact_type: "technical"
+          email_address:
+          given_name: "Technical"
+        - contact_type: "support"
+          email_address:
+          given_name: "Support"
+      entityid: <base_url>/<name>/proxy.xml
+      metadata:
+        remote:
+          - url: https://path/to/metadata.xml
+            node_name: urn:oasis:names:tc:SAML:2.0:metadata:EntityDescriptor
+      service:
+        idp:
+          name: Proxy IdP
+          scopes:
+            - "{{ inventory_hostname }}"
+          policy:
+            default:
+              sign_assertion: true
+    endpoints:
+      single_sign_on_service:
+        'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect': sso/redirect
+        'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST': sso/post
+  - template_file: etc/satosa/plugins/frontends/openid_connect_frontend.yaml.j2
+    conf_file_name: openid_connect_frontend.yaml
+    name: OIDC
+    client_db_path: "{{ satosa__oidc_client_db_path }}"
+    signing_key_path: "{{ satosa__data_dir }}/certs/frontend_oidc.key"
+    provider:
+      client_registration_supported: no
+      response_types_supported: ["code"]
+      subject_types_supported: ["public"]
+      scopes_supported: ["openid", "profile"]
+      extra_scopes:
+        profile:
+          - given_name
+          - family_name
+          - birthdate
+          - person_identifier
+        legal_profile:
+          - legal_name
+          - legal_person_identifier
+        legal_address:
+          - legal_address
+        vat_registration:
+          - vat_registration
+
+satosa__backends:
+  - template_file: etc/satosa/plugins/backends/saml2_eidas_backend.yaml.j2
+    conf_file_name: saml2_eidas_backend.yaml
+    name: Saml2
+    metadata_key_file: backends_metadata.key
+    metadata_cert_file: backends_metadata.crt
+    html_form_spec:
+      "": default.html
+    requested_attributes:
+      - friendly_name: PersonIdentifier
+        required: true
+      - friendly_name: DateOfBirth
+        required: true
+      - friendly_name: FamilyName
+        required: true
+      - friendly_name: FirstName
+        required: true
+      - friendly_name: LegalName
+        required: true
+      - friendly_name: LegalPersonIdentifier
+        required: true
+      - friendly_name: LegalAddress
+        required: false
+      - friendly_name: VATRegistration
+        required: false
+    sp_config:
+      organization:
+        display_name:
+        name:
+        url: "https://{{ inventory_hostname }}"
+      contact_person:
+        - contact_type: "technical"
+          email_address:
+          given_name: "Technical"
+        - contact_type: "support"
+          email_address:
+          given_name: "Support"
+      entityid: <base_url>/<name>/proxy_saml2_backend.xml
+      name: CEF-eid Demo Proxy
+      metadata:
+        remote:
+          - url: https://eidas.gov.gr/EidasNode/ConnectorResponderMetadata
+            node_name: urn:oasis:names:tc:SAML:2.0:metadata:EntityDescriptor
+    encryption_keypairs:
+      - key_file: "{{ satosa__backends_cert_name }}.key"
+        cert_file: "{{ satosa__backends_cert_name }}.crt"
+    preferred_bindings:
+      single_sign_on_service:
+        - urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
+    service:
+      sp:
+        requested_attributes:
+          - friendly_name: PersonIdentifier
+            required: true
+          - friendly_name: FamilyName
+            required: true
+          - friendly_name: FirstName
+            required: true
+          - name: http://eidas.europa.eu/attributes/naturalperson/DateOfBirth
+            required: true
+        endpoints:
+            assertion_consumer_service:
+              - "[<base_url>/<name>/acs/post, 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST']"
+    acr_mapping:
+      "https://eidas.gov.gr/EidasNode/ConnectorResponderMetadata":
+        class_ref: http://eidas.europa.eu/LoA/low
+        comparison: minimum
+      "https://pre.eidas.gov.gr/EidasNode/ConnectorResponderMetadata":
+        class_ref: http://eidas.europa.eu/LoA/low
+        comparison: minimum
+      "https://eid-proxy.aai-dev.grnet.gr:8443/EidasNode/ConnectorResponderMetadata":
+        class_ref: http://eidas.europa.eu/LoA/low
+        comparison: minimum
+      "": http://eidas.europa.eu/LoA/low
+    requester_acr_mapping:
+      "osddydd":
+        class_ref: http://eidas.europa.eu/LoA/high
+        comparison: minimum
+
+satosa__micro_services:
+  - template_file: etc/satosa/plugins/micro_services/requested_attributes_adder.yaml.j2
+    conf_file_name: requested_attributes_adder.yaml
+    config:
+      attributes_mapping:
+        surname: [person_identifier]
+  - template_file: etc/satosa/plugins/micro_services/hasher.yaml.j2
+    conf_file_name: hasher.yaml
+    config:
+      "":
+        salt: 329EAE72BCE44E55A24761A509CFA23B
+        alg: sha512
+        subject_id: yes
+        attributes:
+          - person_identifier
+          - legal_person_identifier
+  - template_file: etc/satosa/plugins/micro_services/primary_identifier.yaml.j2
+    conf_file_name: primary_identifier.yaml
+    config:
+      "https://eidas.gov.gr/EidasNode/ConnectorResponderMetadata":
+        ordered_identifier_candidates:
+          - attribute_names: [person_identifier]
+          - attribute_names: [legal_person_identifier]
+        primary_identifier: identity
+  - template_file: etc/satosa/plugins/micro_services/attribute_processor.yaml.j2
+    conf_file_name: attribute_processor.yaml
+    config:
+      processes:
+        - attribute: identity
+          processors:
+            - name: ScopeProcessor
+              module: satosa.micro_services.processors.scope_processor
+              kwargs:
+                scope: "{{ inventory_hostname }}"

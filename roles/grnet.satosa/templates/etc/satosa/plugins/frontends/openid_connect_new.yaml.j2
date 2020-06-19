@@ -1,0 +1,50 @@
+{{ ansible_managed | comment }}
+
+module: satosa.frontends.openid_connect_oidcop.OpenIDConnectFrontend
+name: {{ item.name }}
+config:
+{% if item.conf.response_types_supported is defined %}
+    response_types_supported:
+{%   for response_type in item.conf.response_types_supported %}
+        - {{ response_type }}
+{%   endfor %}
+{% endif %}
+{% if item.conf.db_uri is defined %}
+    db_uri: {{ item.conf.db_uri }}
+{% endif %}
+    enable_registration_endpoint: {{ item.conf.enable_registration_endpoint | d(false) }}
+    enable_introspection_endpoint: {{ item.conf.enable_introspection_endpoint | d(false) }}
+{% if item.conf.client_json_path is defined %}
+    client_json_path: {{ item.conf.client_json_path }}
+{% endif %}
+{% if item.conf.subject_types_supported is defined %}
+    subject_types_supported:
+{%   for subject_type in item.conf.subject_types_supported %}
+        - {{ subject_type }}
+{%   endfor %}
+{% endif %}
+    client_secret_expiration_time: {{ item.conf.client_secret_expiration_time | d(0) }}
+    scopes_supported: {{ item.conf.scopes_supported | d(["openid"]) }}
+{% if item.conf.jwks is defined %}
+    jwks:
+{%   for jwk in item.conf.jwks %}
+        - {{ jwk | to_json }}
+{%   endfor %}
+{% endif %}
+{% if item.conf.jwks_private_path is defined %}
+    jwks_private_path: {{ item.conf.jwks_private_path }}
+{% endif %}
+{% if item.conf.remote_introspection_endpoint is defined %}
+    remote_introspection_endpoint: {{ item.conf.remote_introspection_endpoint }}
+    remote_introspection_client_id: {{ item.conf.remote_introspection_client_id | d(None) }}
+    remote_introspection_client_secret: {{ item.conf.remote_introspection_client_secret | d(None) }}
+{% endif %}
+{% if item.conf.extra_scopes is defined %}
+    extra_scopes:
+{%   for scope, claims in item.conf.extra_scopes.items() %}
+      {{ scope }}:
+{%     for claim in claims %}
+        - {{ claim }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}

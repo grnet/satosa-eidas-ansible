@@ -1,0 +1,21 @@
+{{ ansible_managed | comment }}
+
+module: satosa.micro_services.hasher.Hasher
+name: {{ item.name | d("Hasher") }}
+config:
+{# The default configuration is set with entity="" #}
+{% for entity, conf in item.config.items() %}
+  "{{ entity }}":
+{%   if conf.salt is defined | d(false) %}
+    salt: {{ conf.salt }}
+{%   endif %}
+{%   if conf.alg is defined | d(false) %}
+    alg: {{ conf.alg }}
+{%   endif %}
+{%   if conf.subject_id is defined | d(false) %}
+    subject_id: {{ conf.subject_id }}
+{%   endif %}
+{%   if conf.attributes is defined | d(false) %}
+    attributes: {{ conf.attributes }}
+{%   endif %}
+{% endfor %}

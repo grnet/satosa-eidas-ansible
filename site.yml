@@ -1,0 +1,8 @@
+---
+- hosts: all,!ansible_disabled_true
+  tasks:
+  - action: setup
+  - group_by: key="ansible_disabled_{{ ansible_local.ansible_disabled | d(false) }}"
+
+- import_playbook: plays/nginx.yml
+- import_playbook: plays/satosa.yml

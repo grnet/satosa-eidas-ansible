@@ -1,0 +1,15 @@
+dependencies:
+  - role: grnet.merge_vars
+    tags: [always]
+  - role: grnet.core
+    tags: ["role::grnet:core"]
+  - role: grnet.apt
+    tags: ["role::grnet:apt"]
+  - role: debops.unattended_upgrades
+    tags: ["role::debops:unattended_upgrades"]
+  - role: grnet.ferm
+    tags: ["role::grnet:ferm"]
+  - role: devsec.ssh
+    tags: ["role::devsec:ssh"]
+  - role: debops.users
+    tags: ["role::debops:users"]

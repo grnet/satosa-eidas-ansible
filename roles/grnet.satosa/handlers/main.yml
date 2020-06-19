@@ -1,0 +1,26 @@
+---
+
+- name: Restart satosa service
+  service:
+    name: "{{ satosa__service_name }}"
+    enabled: yes
+    state: "restarted"
+  when: satosa__run_service
+
+- name: Reload satosa service
+  service:
+    name: "{{ satosa__service_name }}"
+    enabled: yes
+    state: "restarted"
+    daemon_reload: "{{ (ansible_service_mgr == 'systemd') | ternary('yes', omit) }}"
+  when: satosa__run_service
+
+- name: Restart satosa docker
+  docker_container:
+    name: satosa
+    image: "{{ satosa__docker_image_name }}"
+    published_ports: "{{ satosa__docker_host_port }}:{{ satosa__docker_container_port }}"
+    volumes: "{{ satosa__docker_volumes }}"
+    env: "{{ satosa__docker_env_variables }}"
+    restart: true
+  when: satosa__run_docker and not (docker_started.changed | d(false))

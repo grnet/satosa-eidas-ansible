@@ -1,0 +1,51 @@
+{{ ansible_managed | comment }}
+
+BASE: {{ satosa__base_url }}
+
+COOKIE_STATE_NAME: "{{ satosa__cookie_state_name }}"
+CONTEXT_STATE_DELETE: "{{ satosa__context_state_delete }}"
+STATE_ENCRYPTION_KEY: "{{ satosa__state_encryption_key }}"
+
+INTERNAL_ATTRIBUTES: "{{ satosa__data_dir }}/internal_attributes.yaml"
+
+BACKEND_MODULES:
+{% for path in satosa__backends | map(attribute='conf_file_name') %}
+  - "{{ satosa__data_dir }}/{{ satosa__backend_modules }}/{{ path }}"
+{% endfor %}
+FRONTEND_MODULES:
+{% for path in satosa__frontends | map(attribute='conf_file_name') %}
+  - "{{ satosa__data_dir }}/{{ satosa__frontend_modules }}/{{ path }}"
+{% endfor %}
+{% if satosa__micro_services | d(False) %}
+MICRO_SERVICES:
+{%   for path in satosa__micro_services | map(attribute='conf_file_name') %}
+  - "{{ satosa__data_dir }}/{{ satosa__micro_services_modules }}/{{ path }}"
+{%   endfor %}
+{% endif %}
+
+LOGGING:
+  version: 1
+  formatters:
+    simple:
+      format: "[%(asctime)s] [%(levelname)s] [%(name)s.%(funcName)s] %(message)s"
+  handlers:
+    stdout:
+      class: logging.StreamHandler
+      stream: "ext://sys.stdout"
+      level: "{{ satosa__logging_level }}"
+      formatter: simple
+  loggers:
+    satosa:
+      level: "{{ satosa__logging_level }}"
+    saml2:
+      level: "{{ satosa__logging_level }}"
+    oidcendpoint:
+      level: "{{ satosa__logging_level }}"
+    pyop:
+      level: "{{ satosa__logging_level }}"
+    oic:
+      level: "{{ satosa__logging_level }}"
+  root:
+    level: "{{ satosa__logging_level }}"
+    handlers:
+      - stdout

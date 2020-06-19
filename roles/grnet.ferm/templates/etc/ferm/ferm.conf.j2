@@ -1,0 +1,33 @@
+# Drop here rules that must be evaluated early, for example accounting
+# @include 'early.d/';
+
+## Basic minimal ruleset
+# Initial, low-level stuff
+domain (ip ip6) {
+    chain INPUT {
+        # Default policy
+        policy DROP;
+
+        # Accept all loopback traffic
+        interface lo ACCEPT;
+
+        # Early drop INVALID packets w/o traversing the whole chain
+        mod state state INVALID DROP;
+
+        # Accept established and related connections
+        mod state state (ESTABLISHED RELATED) ACCEPT;
+
+        # Accept all multicast traffic
+        mod pkttype pkt-type multicast ACCEPT;
+
+        # Accept ICMP. Invalid ICMP packets should have been dropped by now anyway.
+        proto icmp ACCEPT;
+
+    }
+}
+
+## Include ansible managed ferm configuration
+@include '{{ferm__ansible_include}}';
+
+## Include the manual configuration
+@include '{{ferm__manual_rules_subdir}}/';

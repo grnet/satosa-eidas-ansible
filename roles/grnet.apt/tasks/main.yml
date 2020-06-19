@@ -1,0 +1,123 @@
+- name: Ensure base_packages are installed.
+  apt:
+    name: "{{ apt__base_packages }}"
+    state: present
+
+# TODO: Support base packages per debian version
+
+# - name: Merge apt key files from hostvars
+#   set_fact:
+#     apt__key_files: "{{hostvars[inventory_hostname][item] | combine(apt__key_files|default([]))}}"
+#   with_items: "{{ hostvars[inventory_hostname].keys() | select('match', '.*apt__key_files_to_merge$') | list}}"
+
+# - name: Merge apt key files from vars
+#   set_fact:
+#     apt__key_files: "{{vars[item] | combine(apt__key_files|default([]))}}"
+#   with_items: "{{ vars.keys() | select('match', '.*apt__key_files_to_merge$') | list}}"
+
+
+# TODO find a way to set if ascii armored or binary gpg
+- name: Gather current apt key files
+  find:
+    path: '{{ apt__gpg_base_dir }}'
+    file_type: 'file'
+    patterns: '{{ apt__gpg_ansible_prefix }}*'
+  register: current_apt_keys
+
+- name: Set regex pattern
+  set_fact:
+    apt__ansible_regex_patern: "^{{ apt__gpg_ansible_prefix }}(?P<key_name>.+)$"
+
+- name: Remove obsolete apt keys
+  file:
+    path: '{{ apt__gpg_base_dir }}/{{ apt__gpg_ansible_prefix }}{{ item }}'
+    state: 'absent'
+  with_items: "{{ current_apt_keys.files | map(attribute='path') | map('basename') | map('regex_replace', apt__ansible_regex_patern, '\\g<key_name>') | list | difference(apt__key_files.keys())}}"
+
+- name: Configure custom apt key files
+  copy:
+    dest: '{{ apt__gpg_base_dir }}/{{ apt__gpg_ansible_prefix }}{{ item.key }}'
+    src: '{{ item.value.src | d(omit) }}'
+    #    content: '{{ item.value.content | d(omit) }}' ansible has issues with binary content
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  with_dict: '{{ apt__key_files }}'
+
+
+- name: Gather current apt repository files
+  find:
+    path: '{{ apt__sources_base_dir}}'
+    file_type: 'file'
+    patterns: '{{ apt__sources_ansible_prefix }}*.list'
+  register: current_apt_repositories
+
+- name: Set regex pattern
+  set_fact:
+    apt__ansible_regex_patern: "^{{ apt__sources_ansible_prefix }}(?P<key_name>.+).list$"
+
+- name: Remove obsolete apt repositories
+  file:
+    path: '{{ apt__sources_base_dir }}/{{ apt__sources_ansible_prefix }}{{ item }}.list'
+    state: 'absent'
+  with_items: "{{ current_apt_repositories.files | map(attribute='path') | map('basename') | map('regex_replace', apt__ansible_regex_patern, '\\g<key_name>') | list | difference(apt__repositories.keys())}}"
+
+- name: Configure custom APT repositories
+  apt_repository:
+    update_cache: False
+    repo: '{{ item.value.repo }}'
+    mode: '{{ item.value.mode | d(omit) }}'
+    filename: '{{ apt__sources_base_dir }}/{{ apt__sources_ansible_prefix }}{{ item.key }}'
+    # filename: '{{ item.value.filename | d(omit) }}' # do not support custom filenames
+    state: present
+    # state: '{{ item.value.state    | d("present"
+    #                             if (item.architecture|d(apt__architecture) == apt__architecture and
+    #                                 item.distribution|d(apt__distribution) == apt__distribution and
+    #                                 item.distribution_release|d(apt__distribution_release) == apt__distribution_release)
+    #                             else "absent") }}'
+  with_dict: '{{ apt__repositories }}'
+  register: apt__register_repositories
+
+- name: Gather current apt preferences files
+  find:
+    path: '{{ apt__preferences_base_dir }}'
+    file_type: 'file'
+    patterns: '{{ apt__preferences_ansible_prefix }}*'
+  register: current_apt_preferences
+
+- name: Set regex pattern
+  set_fact:
+    apt__ansible_regex_patern: "^{{ apt__preferences_ansible_prefix }}(?P<key_name>.+)$"
+
+- name: Remove obsolete apt preferences
+  file:
+    path: '{{ apt__preferences_base_dir }}/{{ apt__preferences_ansible_prefix }}{{ item }}'
+    state: 'absent'
+  with_items:
+   "{{ current_apt_preferences.files | map(attribute='path') | map('basename') |
+       map('regex_replace', apt__ansible_regex_patern, '\\g<key_name>') | list |
+       difference(apt__preferences.keys())}}"
+
+- name: Configure apt preferences
+  template:
+    src: etc/apt/preferences.d/preferences.j2
+    dest: "{{ apt__preferences_base_dir }}/{{ apt__preferences_ansible_prefix }}{{ item.key }}"
+  with_dict: "{{ apt__preferences }}"
+
+- name: Update APT cache
+  apt:
+    update_cache: True
+  when: apt__register_repositories is changed
+    # cache_valid_time: '{{ omit
+    #                      if (apt__register_sources_template is changed or
+    #                          apt__register_sources_diversion is changed or
+    #                          apt__register_repositories is changed)
+    #                      else apt__cache_valid_time }}'
+
+# Place this here, after keys/sources, so that the aboive can be used with the role packages
+- name: Ensure role packages are installed.
+  apt:
+    name: "{{ apt__role_packages }}"
+    state: present
+
+# vim: ft=ansible

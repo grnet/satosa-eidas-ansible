@@ -1,0 +1,8 @@
+---
+
+openssl_certificate__dir: /etc/certs
+openssl_certificate__name: example
+openssl_certificate__common_name: "{{ inventory_hostname }}"
+
+openssl_certificate__system_user_name:
+openssl_certificate__system_group_name:

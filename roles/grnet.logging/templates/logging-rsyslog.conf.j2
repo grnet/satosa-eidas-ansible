@@ -1,0 +1,6 @@
+{{ managed_by_ansible | comment }}
+
+if $programname == '{{ logging__program_name }}' then {
+    {{ logging__log_file }}
+    ~
+}

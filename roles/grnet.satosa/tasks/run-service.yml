@@ -1,0 +1,52 @@
+---
+
+- name: Create SATOSA dir
+  file:
+    path: "{{ satosa__install_path }}"
+    state: directory
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0755
+
+- name: Install pip packages
+  pip:
+    name: "{{ satosa__pip_packages }}"
+    virtualenv: "{{ satosa__install_path }}"
+    state: present
+    virtualenv_python: "{{ satosa__python }}"
+    virtualenv_site_packages: no
+  notify: Reload satosa service
+
+- name: Add attributemaps
+  copy:
+    src: satosa/attributemaps
+    dest: "{{ satosa__data_dir }}"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0755
+  notify: Restart satosa service
+
+- name: Systemd configuration files
+  template:
+    src: etc/systemd/system/satosa.service.j2
+    dest: /etc/systemd/system/{{ satosa__service_name }}.service
+    mode: 0644
+    owner: root
+    group: root
+  notify: Reload satosa service
+
+- name: Create SATOSA log dir
+  file:
+    path: "{{ satosa__log_dir }}"
+    state: directory
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0755
+
+- include_role:
+    name: grnet.logging
+    tasks_from: setup_logging.yml
+  vars:
+    logging__log_file: "{{ satosa__log_file }}"
+    logging__program_name: "{{ satosa__service_name }}"
+    logging__service_name: "{{ satosa__service_name }}"

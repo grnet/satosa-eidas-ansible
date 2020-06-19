@@ -1,0 +1,6 @@
+base_ferm__defs_templates_to_merge:
+  '01-grnet.conf':
+    template: 'etc/ferm/defs.conf.j2'
+
+ferm__ssh_access_v4: ['$HQ_V4']
+ferm__ssh_access_v6: ['$HQ_V6']

@@ -1,0 +1,32 @@
+
+nginx_ferm__rules_templates_to_merge:
+    'nginx.conf':
+        template: 'nginx/etc/ferm/ansible.d/nginx_ferm.conf.j2'
+
+nginx__domain_name: "{{ inventory_hostname }}"
+nginx__cert_location: "/etc/letsencrypt/live/{{ nginx__domain_name }}/fullchain.pem"
+nginx__key_location: "/etc/letsencrypt/live/{{ nginx__domain_name }}/privkey.pem"
+certbot__challenge_location: /var/www/letsencrypt
+nginx__proxy_target_port: 8080
+nginx__use_certbot: true
+nginx_css_upload_enable: true
+nginx_css_upload_src: nginx/www/css/*
+nginx_css_upload_dest: /var/www/css
+nginx_icons_upload_enable: true
+nginx_icons_upload_src: nginx/www/icons/*
+nginx_icons_upload_dest: /var/www/icons
+
+nginx__http_port: 80
+nginx__https_port: 443
+nginx_http_template_enable: true
+nginx_http_template:
+  default:
+    template_file: nginx/nginx-certbot.conf.j2
+    conf_file_name: default.conf
+    conf_file_location: /etc/nginx/conf.d/
+    challenge_location: "{{ certbot__challenge_location }}"
+    server_name: "{{ nginx__domain_name }}"
+    add_css_dir: true
+    proxy_target:
+      host: 127.0.0.1
+      port: "{{ nginx__proxy_target_port }}"

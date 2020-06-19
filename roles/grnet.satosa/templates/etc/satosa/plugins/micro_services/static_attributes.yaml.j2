@@ -1,0 +1,9 @@
+{{ ansible_managed | comment }}
+
+module: satosa.micro_services.attribute_modifications.AddStaticAttributes
+name: {{ item.name | d("AddAttributes") }}
+config:
+    static_attributes:
+{% for key, value in item.attributes.items() %}
+        {{ key }}: {{ value }}
+{% endfor %}

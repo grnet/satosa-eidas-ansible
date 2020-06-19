@@ -1,0 +1,49 @@
+
+- block:
+  # - name: Filter dict vars to merge
+  #   set_fact:
+  #     __vars: "{{ {item: lookup('vars', item)} | combine(__vars|default({})) }}"
+  #   with_items: "{{ vars.keys() | select('match', '.*_to_merge$') | list }} "
+
+  # - include_tasks: merge_dict.yml
+  #   vars:
+  #     __v: "{{ item }}"
+  #   with_items: "{{ merge_vars }}"
+
+  # # - name: Filter list vars to merge
+  # #   set_fact:
+  # #     __vars: "{{ {item: lookup('vars', item)} | combine(__vars|default({})) }}"
+  # #   with_items: "{{ vars.keys() | select('match', '.*_list_to_merge$') | list }} "
+
+  # - include_tasks: merge_list.yml
+  #   vars:
+  #     __v: "{{ item }}"
+  #   with_items: "{{ merge_list_vars }}"
+
+  - name: Find dict vars to merge
+    set_fact:
+      merge_vars__dict_vars: "{{ vars[item] | union(merge_vars__dict_vars|default([])) }}"
+    with_items: "{{ vars.keys() | select('match', '.*_merge_vars__dict_vars_list$') | list }} "
+
+  - debug:
+      msg: "Found the following dict vars to merge: {{ merge_vars__dict_vars }}"
+
+  - include_tasks: merge_dict.yml
+    vars:
+      __v: "{{ item }}"
+    with_items: "{{ merge_vars__dict_vars }}"
+
+  - name: Find list vars to merge
+    set_fact:
+      merge_vars__list_vars: "{{ lookup('vars', item) | union(merge_vars__list_vars|default([])) }}"
+    with_items: "{{ vars.keys() | select('match', '.*_merge_vars__list_vars_list$') | list }} "
+
+  - debug:
+      msg: "Found the following list vars to merge: {{ merge_vars__list_vars }}"
+
+  - include_tasks: merge_list.yml
+    vars:
+      __v: "{{ item }}"
+    with_items: "{{ merge_vars__list_vars }}"
+
+  tags: always

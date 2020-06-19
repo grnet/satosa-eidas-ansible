@@ -1,0 +1,12 @@
+# - name: Merge users
+#   set_fact:
+#     users__merged_users: "{{hostvars[inventory_hostname][item] | union(users__merged_users|default([]))}}"
+#   with_items: "{{ hostvars[inventory_hostname].keys() | select('match', '.*users__users_to_merge$') | list}}"
+
+- block:
+  - include: users.yml
+  - include: forward.yml
+  - include: sshkeys.yml
+  - include: resources.yml
+  - include: dotfiles.yml
+  when: users__enabled | bool

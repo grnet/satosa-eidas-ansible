@@ -1,0 +1,65 @@
+{{ ansible_managed | comment }}
+
+server {
+    server_name {{ item.value.server_name }};
+
+{% if item.value.add_css_dir | d(false) %}
+    location ~ \.(css|png) {
+        root /var/www;
+    }
+{% endif %}
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto http;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
+
+        proxy_pass http://{{ item.value.proxy_target.host }}:{{ item.value.proxy_target.port }};
+    }
+
+    listen [::]:443 ssl ipv6only=on;
+    listen 443 ssl;
+{% if item.value.configure_certbot | d(true) %}
+    ssl_certificate /etc/letsencrypt/live/{{ item.value.server_name }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ item.value.server_name }}/privkey.pem;
+    ssl_session_cache shared:le_nginx_SSL:1m;
+    ssl_session_timeout 1440m;
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+
+    ssl_ciphers "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS";
+    ssl_dhparam /usr/lib/python3/dist-packages/certbot/ssl-dhparams.pem;
+{% else %}
+    ssl_certificate {{ item.value.ssl_certificate | d("/etc/ssl/certs/" + inventory_hostname + ".crt") }};
+    ssl_certificate_key {{ item.value.ssl_certificate_key | d("/etc/ssl/private/" + inventory_hostname + ".key") }};
+{%   if item.value.ssl_trusted_certificate is defined %}
+    ssl_trusted_certificate {{ item.value.ssl_trusted_certificate }};
+{%   endif %}
+{% endif %}
+}
+
+server {
+    if ($host = {{ item.value.server_name }}) {
+        return 301 https://$host$request_uri;
+    }
+
+    listen 80 ;
+    listen [::]:80 ;
+
+{% if item.value.challenge_location is defined %}
+{# Taken from: https://community.letsencrypt.org/t/how-to-nginx-configuration-to-enable-acme-challenge-support-on-all-http-virtual-hosts/5622 #}
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        root {{ item.value.challenge_location }};
+    }
+
+    location = /.well-known/acme-challenge/ {
+        return 404;
+    }
+{% endif %}
+
+    server_name {{ item.value.server_name }};
+    return 404;
+}
