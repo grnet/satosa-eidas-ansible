@@ -1,0 +1,24 @@
+- hosts: all
+  user: debian
+  become: true
+  become_user: root
+  become_method: sudo
+  become_flags: '-HE'
+  connection: ssh
+  gather_facts: false
+
+  pre_tasks:
+  - name: Bootstrap | Update APT repositories, install ansible base requirements
+    raw: 'apt-get update ; apt-get --no-install-recommends -yq install python python-apt libcap2-bin'
+    # TODO: Add changed when
+
+  - name: Bootstrap | Gather ansible facts
+    action: setup
+
+  roles:
+    - grnet.core
+
+  vars:
+    ansible_user: debian
+
+# vim: ft=ansible

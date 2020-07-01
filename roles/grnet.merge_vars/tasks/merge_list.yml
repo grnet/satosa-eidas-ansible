@@ -1,0 +1,21 @@
+- name: Set pattern
+  set_fact:
+    __pattern: ".*{{ __v }}{{merge_vars__merge_list_suffix}}$"
+
+- name: Reset tmp var
+  set_fact:
+    __tmp: []
+
+- name: Merge lists based on pattern
+  set_fact:
+    __tmp: "{{ lookup('vars', item2) | union(__tmp|default([])) }}"
+  with_items: "{{ vars.keys() | select('match', __pattern) | list}}"
+  loop_control:
+    loop_var: item2
+
+- name: Set merged var
+  set_fact:
+    "{{ __v }}": "{{ __tmp | union(vars[__v]|default([])) }}"
+
+
+# vim: ft=ansible

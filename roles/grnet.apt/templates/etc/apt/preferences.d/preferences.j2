@@ -1,0 +1,21 @@
+{{ managed_by_ansible | comment}}
+
+{% if item.value.raw is undefined %}
+{%   if item.value.role|d( item.value.by_role|d() ) %}
+Explanation: Pin added by role: {{ item.value.role | d(item.value.by_role) }}
+{%   endif %}
+Explanation: {{ (item.value.reason|d('Reason not specified')).split('\n') | join('\nExplanation: ') }}
+{%   if item.value.packages is string %}
+Package: {{ item.value.packages }}
+{%   else %}
+Package: {{ item.value.packages | join(" ") }}
+{%   endif %}
+{%   if item.value.version|d() %}
+Pin: version {{ item.value.version + '*' }}
+{%   else %}
+Pin: {{ item.value.pin }}
+{%   endif %}
+Pin-Priority: {{ item.value.priority | d(apt_preferences__priority_default) }}
+{% elif item.value.raw|d() %}
+{{ item.value.raw }}
+{% endif %}

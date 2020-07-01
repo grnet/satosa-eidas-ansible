@@ -1,0 +1,9 @@
+---
+- name: Restart rsyslog
+  service:
+    name: rsyslog
+    state: restarted
+    enabled: yes
+
+- name: Run logrotate
+  shell: logrotate /etc/logrotate.conf

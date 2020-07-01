@@ -1,0 +1,11 @@
+---
+
+- hosts: nginx
+  roles:
+    - role: grnet.base
+      tags: ["nginx::grnet:base", "role::grnet:base"]
+    - role: nginxinc.nginx
+      tags: ["nginx::grnet:nginx", "role::grnet:nginx"]
+    - role: grnet.certbot
+      when: nginx__use_certbot | d(false)
+      tags: ["nginx::grnet:certbot", "role::grnet:certbot"]

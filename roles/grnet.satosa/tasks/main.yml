@@ -1,0 +1,75 @@
+---
+
+- name: Create the satosa system group
+  group:
+    name: "{{ satosa__system_group_name }}"
+    state: "present"
+    system: "yes"
+
+- name: Create the satosa system user
+  user:
+    name: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    comment: "{{ satosa__system_comment }}"
+    shell: "{{ satosa__system_shell }}"
+    system: "yes"
+
+- name: Ensure that the data dir exists
+  file:
+    path: "{{ satosa__data_dir }}"
+    state: directory
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0755
+
+- include_tasks: configure.yml
+
+- include_tasks: metadata.yml
+
+- name: Create the necessary certificates using openssl
+  include_role:
+    name: grnet.openssl-certificate
+  vars:
+    openssl_certificate__dir: "{{ item.dir | d(satosa__data_dir + '/' + satosa__satosa_certs_dir) }}"
+    openssl_certificate__name: "{{ item.name }}"
+    openssl_certificate__common_name: "{{ item.common_name | d(inventory_hostname) }}"
+    openssl_certificate__system_user_name: "{{ satosa__system_user_name }}"
+    openssl_certificate__system_group_name: "{{ satosa__system_group_name }}"
+  with_items: "{{ satosa__create_certificates }}"
+
+- name: Upload certificates to the server
+  copy:
+    src: "{{ item }}"
+    dest: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}"
+    mode: 0640
+    decrypt: yes
+    backup: yes
+  with_fileglob: "{{ satosa__cert_upload_src }}"
+  when: satosa__upload_certs | bool
+
+- name: Create html folder
+  file:
+    path: "{{ satosa__data_dir }}/{{ satosa__html_dir }}"
+    state: directory
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0755
+  when: satosa__upload_html_folder | bool
+
+- name: Create html folder
+  copy:
+    src: "{{ item }}"
+    dest: "{{ satosa__data_dir }}/{{ satosa__html_dir }}"
+    owner: "{{ satosa__system_user_name }}"
+    group: "{{ satosa__system_group_name }}"
+    mode: 0640
+  with_fileglob: "{{ satosa__html_folder_src }}"
+  when: satosa__upload_html_folder | bool
+
+- name: Use docker to run SATOSA
+  include_tasks: run-docker.yml
+  when: satosa__run_docker
+
+- name: Use systemd to run SATOSA
+  include_tasks: run-service.yml
+  when: satosa__run_service

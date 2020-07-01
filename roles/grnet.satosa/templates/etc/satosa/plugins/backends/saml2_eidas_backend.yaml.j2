@@ -1,0 +1,144 @@
+{{ ansible_managed | comment }}
+
+module: satosa.backends.saml2.SAMLEIDASBackend
+name: {{ item.name }}
+config:
+  attribute_profile: {{ item.attribute_profile | d("eidas") }}
+  entityid_endpoint: true
+  mirror_force_authn: no
+  memorize_idp: no
+  use_memorized_idp_when_force_authn: no
+{% if item.disco_srv | d(False) %}
+  disco_srv: {{ item.disco_srv }}
+{% endif %}
+  html_form_spec:
+{% for entity, spec in item.html_form_spec.items() %}
+    "{{ entity }}": "{{ satosa__data_dir }}/{{ satosa__html_dir }}/{{ spec }}"
+{% endfor %}
+  metadata_key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ item.metadata_key_file }}"
+  metadata_cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ item.metadata_cert_file }}"
+  requested_attributes: {{ item.requested_attributes | d([]) | list }}
+
+  sp_config:
+    entityid: {{ item.sp_config.entityid | d("<base_url>/<name>/proxy.xml") }}
+    organization:
+      display_name: "{{ item.sp_config.organization.display_name }}"
+      name: "{{ item.sp_config.organization.name }}"
+      url: "{{ item.sp_config.organization.url }}"
+    contact_person:
+{% for contact_person in item.sp_config.contact_person %}
+      - contact_type: {{ contact_person.contact_type }}
+        email_address: {{ contact_person.email_address }}
+        given_name: {{ contact_person.given_name }}
+{% endfor %}
+
+{% if item.sp_config.key_file is defined and item.sp_config.cert_file is defined %}
+    key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ item.sp_config.key_file }}"
+    cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ item.sp_config.cert_file }}"
+{% else %}
+    key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ satosa__backends_cert_name }}.key"
+    cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ satosa__backends_cert_name }}.crt"
+{% endif %}
+{% if item.sp_config.encryption_keypairs is defined %}
+    encryption_keypairs:
+{%   for key_pair in item.sp_config.encryption_keypairs %}
+      - key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ key_pair.key_file }}"
+        cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ key_pair.cert_file }}"
+{%   endfor %}
+{% endif %}
+
+{% if item.sp_config.name %}
+    name: {{ item.sp_config.name }}
+{% endif %}
+    disable_ssl_certificate_validation: {{ item.sp_config.disable_ssl_certificate_validation | d(False) }}
+    metadata:
+{% if item.sp_config.metadata.local | d() %}
+      local:
+{%   for metadata in item.sp_config.metadata.local %}
+        - "{{ satosa__local_metadata_dir }}/{{ metadata }}"
+{%   endfor %}
+{% endif %}
+{% if item.sp_config.metadata.remote | d() %}
+      remote:
+{%   for metadata in item.sp_config.metadata.remote %}
+        - url: "{{ metadata.url }}"
+{%     if metadata.cert | d() %}
+          cert: "{{ metadata.cert }}"
+{%     endif %}
+{%     if metadata.check_validity | d() %}
+          check_validity: "{{ metadata.check_validity }}"
+{%     endif %}
+{%     if metadata.node_name | d() %}
+          node_name: "{{ metadata.node_name }}"
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% if item.sp_config.metadata.mdq | d() %}
+      mdq:
+{%   for metadata in item.sp_config.metadata.mdq %}
+        - url: "{{ metadata.url }}"
+{%     if metadata.cert | d() %}
+          cert: "{{ metadata.cert }}"
+{%     endif %}
+{%   endfor %}
+{% endif %}
+
+{% if item.preferred_bindings | d(False) %}
+    preferred_binding:
+{%   for service, endpoints in item.preferred_bindings.items() %}
+          {{ service }}:
+{%     for endpoint in endpoints %}
+            - {{ endpoint }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+    service:
+      sp:
+        sp_type: {{ item.service.sp.sp_type | d("public") }}
+        sp_type_in_metadata: {{ item.service.sp.sp_type_in_metadata | d(False) }}
+        required_attributes:
+{% for required_attribute in item.service.sp.required_attributes | d([]) %}}
+{%   if required_attribute.friendly_name | d(False) %}
+          friendly_name: {{ required_attribute.friendly_name }}
+{%   endif %}
+{%   if required_attribute.name | d(False) %}
+          name: {{ required_attribute.name }}
+{%   endif %}
+          required: {{ required_attribute.required | d(True) }}
+{%   if required_attribute.name_format | d(False) %}
+          name_format: {{ required_attribute.name_format }}
+{%   endif %}
+{% endfor %}
+        optional_attributes: {{ item.service.sp.optional_attributes | d([]) | list }}
+        requested_attributes: {{ item.service.sp.requested_attributes | d([]) | list }}
+        allow_unsolicited: false
+        want_response_signed: true
+        endpoints:
+{% for service, endpoints in item.service.sp.endpoints.items() %}
+          {{ service }}:
+{%   for endpoint in endpoints %}
+            - {{ endpoint }}
+{%   endfor %}
+{% endfor %}
+
+{% if item.service.sp.name_id_format | d(False) %}
+        name_id_format: {{ item.service.sp.name_id_format }}
+{% endif %}
+        name_id_format_allow_create: {{ item.service.sp.name_id_format_allow_create | d(true) }}
+{% if item.service.ui_info | d(false) %}
+        ui_info:
+{%   for key, value in item.service.ui_info.items() %}
+          {{ key }}: {{ value }}
+{%   endfor %}
+{% endif %}
+  acr_mapping:
+{% for domain, level in item.acr_mapping.items() %}
+    "{{ domain }}":
+      {{ level }}
+{% endfor %}
+
+  requester_acr_mapping:
+{% for requester, level in item.requester_acr_mapping.items() %}
+    "{{ requester }}":
+      {{ level }}
+{%- endfor %}

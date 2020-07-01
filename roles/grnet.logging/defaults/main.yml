@@ -1,0 +1,10 @@
+---
+logging__log_file:
+logging__program_name:
+logging__service_name:
+logging__log_file_size: 100M
+logging__run_rsyslog: True
+
+logging_apt__role_packages_to_merge:
+  - rsyslog
+  - logrotate

@@ -1,0 +1,5 @@
+# {ansible_managed}
+
+Defaults: %{{ core__admin_group }} env_check += "SSH_CLIENT"
+%{{ core__admin_group  }} ALL = (ALL:ALL) NOPASSWD: SETENV: ALL
+

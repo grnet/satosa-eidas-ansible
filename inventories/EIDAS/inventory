@@ -1,0 +1,9 @@
+[proxy]
+
+[ansible_disabled_true:children]
+
+[nginx:children]
+proxy
+
+[satosa:children]
+proxy

@@ -1,0 +1,89 @@
+{{ ansible_managed | comment }}
+
+attributes:
+  identifier:
+    saml: [eduPersonUniqueId]
+    openid: [sub]
+  nameid:
+    saml: [nameID]
+  edupersontargetedid:
+    saml: [eduPersonTargetedID]
+  edupersonorcid:
+    openid: [edupersonorcid]
+    orcid: [edupersonorcid]
+    saml: [eduPersonOrcid]
+  address:
+    eidas: [CurrentAddress]
+    saml: [postaladdress]
+  displayname:
+    openid: [nickname]
+    orcid: [nickname]
+    saml: [displayName]
+  givenname:
+    eidas: [FirstName]
+    facebook: [first_name]
+    openid: [given_name]
+    orcid: [given_name]
+    saml: [givenName]
+  mail:
+    eidas: [email]
+    facebook: [email]
+    openid: [email]
+    orcid: [mail]
+    saml: [mail]
+  name:
+    openid: [name]
+    saml: [cn]
+  surname:
+    facebook: [last_name]
+    openid: [family_name]
+    orcid: [family_name]
+    saml: [sn, surname]
+    eidas: [FamilyName]
+  birth_date:
+    openid: [birthdate]
+    eidas: [DateOfBirth]
+    saml: [schacDateOfBirth]
+  birth_name:
+    eidas: [BirthName]
+    saml: [displayName]
+  birth_place:
+    eidas: [PlaceOfBirth]
+    saml: [schacPlaceOfBirth]
+  gender:
+    eidas: [Gender]
+    saml: [schacGender]
+  epsa:
+    saml: [eduPersonScopedAffiliation]
+  eppn:
+    saml: [eduPersonPrincipalName]
+  epe:
+    saml: [eduPersonEntitlement]
+  epa:
+    saml: [eduPersonAssurance]
+  spuc:
+    saml: [schacPersonalUniqueCode]
+  schachomeorganization:
+    saml: [schacHomeOrganization]
+  vpea:
+    saml: [voPersonExternalAffiliation]
+  person_identifier:
+    openid: [person_identifier]
+    eidas: [PersonIdentifier]
+    saml: [PersonIdentifier]
+  legal_name:
+    openid: [legal_name]
+    eidas: [LegalName]
+    saml: [LegalName]
+  legal_person_identifier:
+    openid: [legal_person_identifier]
+    eidas: [LegalPersonIdentifier]
+    saml: [LegalPersonIdentifier]
+  legal_address:
+    openid: [legal_address]
+    eidas: [LegalAddress]
+    saml: [LegalAddress]
+  vat_registration:
+    openid: [vat_registration]
+    eidas: [VATRegistration]
+    saml: [VATRegistration]

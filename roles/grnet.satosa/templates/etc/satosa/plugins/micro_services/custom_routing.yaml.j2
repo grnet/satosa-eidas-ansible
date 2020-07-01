@@ -1,0 +1,9 @@
+{{ ansible_managed | comment }}
+
+module: satosa.micro_services.custom_routing.DecideBackendByRequester
+name: {{ item.name | d("RequesterDecider") }}
+config:
+    requester_mapping:
+{% for key, value in item.config.requester_mapping.items() %}
+        {{ key }}: {{ value }}
+{% endfor %}

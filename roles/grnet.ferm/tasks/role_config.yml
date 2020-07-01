@@ -1,0 +1,38 @@
+---
+
+- name: Make sure ansible rules directories exist
+  file:
+    path: '{{ferm__ansible_rules_dir}}/{{ __dir }}'
+    state: 'directory'
+    owner: 'root'
+    group: '{{ferm__dir_group}}'
+    mode: '2750'
+
+- name: Gather current rule files
+  find:
+    path: "{{ ferm__ansible_rules_dir }}/{{__dir}}"
+    file_type: 'file'
+  register: current_role_ansible_dirs
+
+- name: Extract expected rule files
+  set_fact:
+    __a: "{{ __rules|default([]) | map(attribute='name') | list }}"
+
+  # We remove only the needed ones, to notify 'restart ferm' reliably
+- name: Remove obsolete rule files
+  file:
+    path: '{{ferm__ansible_rules_dir}}/{{ __dir }}/{{ item }}'
+    state: 'absent'
+  with_items: "{{ current_role_ansible_dirs.files | map(attribute='path') | map('basename') | list | difference(__a)}}"
+  notify: [ 'Restart ferm' ]
+
+- name: Set current ferm rules
+  template:
+    src: "{{ item.template }}"
+    dest: "{{ ferm__ansible_rules_dir }}/{{ __dir }}/{{ item.name | default('ferm.conf')}}"
+    owner: root
+    group: '{{ ferm__dir_group }}'
+    mode: 0640
+  with_items: "{{ __rules }}"
+  notify: [ 'Restart ferm' ]
+

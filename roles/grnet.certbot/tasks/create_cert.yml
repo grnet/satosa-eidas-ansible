@@ -1,0 +1,15 @@
+---
+
+- name: Create the certificate, using nginx
+  command:
+    certbot certonly --noninteractive --agree-tos
+     --email {{ certbot__email }} -d {{ certbot__domain }}
+     --webroot -w {{ certbot__challenge_location }}
+  when: certbot__use_nginx
+
+- name: Create the certificate, using certbot's webserver
+  command:
+    certbot certonly --noninteractive --agree-tos
+     --email {{ certbot__email }} -d {{ certbot__domain }}
+     --standalone
+  when: certbot__standalone

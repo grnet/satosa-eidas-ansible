@@ -1,0 +1,220 @@
+---
+
+# satosa's group
+satosa__system_group_name: satosa
+# satosa's user
+satosa__system_user_name: satosa
+satosa__system_comment: satosa system user
+satosa__system_shell: /bin/false
+
+# The certificates needed from SATOSA, which will be created using openssl
+satosa__create_certificates:
+  - name: "{{ satosa__frontends_cert_name }}"
+    dir: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}"
+  - name: "{{ satosa__backends_cert_name }}"
+    dir: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}"
+# This is a list which contains certificates to upload to the SATOSA server
+# each element is a dictionary with the format:
+#   name: name
+#   content: content
+# the content will be stored in a file in:
+# {{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ name }}
+satosa__certificates: []
+
+# Satosa DATA_DIR location
+satosa__data_dir: /etc/satosa
+# Name of the directory containing the SATOSA plugins
+satosa__plugins_dir: "plugins"
+# Name of the directory containing the SATOSA backends
+satosa__backend_modules: "{{ satosa__plugins_dir }}/backends"
+# Name of the directory containing the SATOSA frontends
+satosa__frontend_modules: "{{ satosa__plugins_dir }}/frontends"
+# Name of the directory containing the SATOSA micro services
+satosa__micro_services_modules: "{{ satosa__plugins_dir }}/micro_services"
+# Where to place the certs used from SATOSA plugins
+satosa__satosa_certs_dir: "certs"
+# Where to place the certs used to validate external metadata
+satosa__certs_dir: "external_certs"
+# Where to place the metadata of other entities
+satosa__local_metadata_dir: "external_metadata"
+# The name of the cert used from the SAMLfrontend plugin
+satosa__frontends_cert_name: frontends
+# The name of the cert used from the SAMLbackend plugin
+satosa__backends_cert_name: backends
+# Name of the cert files to upload to SATOSA
+satosa__metadata_certs: []
+# Name of the metadata files to upload to SATOSA
+satosa__local_metadata: []
+# The port to which SATOSA will listen to
+satosa__port: 8080
+# Whether to upload an html folder, this is currently used by the eIDAS backend,
+# we should remove it if the eIDAS plugin changes.
+satosa__upload_html_folder: false
+satosa__html_folder_src: satosa/html/*
+satosa__html_dir: html
+# Whether to upload certificates
+satosa__upload_certs: false
+# Glob used to find the certs that will be uploaded
+satosa__cert_upload_src: common/satosa/certs/*
+satosa__external_certs_src: common/satosa/pki
+
+#### These variable are used when SATOSA runs as a systemd service
+satosa_apt__role_packages_to_merge:
+  - python-virtualenv
+  - git
+  - xmlsec1
+# Where to create the SATOSA virtualenv, only used if SATOSA is run as a service
+satosa__install_path: /opt/satosa
+satosa__python: python3
+# List of pip packages to install
+satosa__pip_packages:
+  - git+https://github.com/IdentityPython/SATOSA.git@v4.4.0
+satosa__service_description: SATOSA service
+satosa__service_name: satosa
+satosa__log_dir: /var/log/satosa
+satosa__log_file: "{{ satosa__log_dir }}/satosa.log"
+
+
+#### Docker specific variables
+satosa__docker_image_name: satosa/satosa:latest
+satosa__docker_repo:
+satosa__docker_host_port: "{{ satosa__port }}"
+satosa__docker_container_port: "8000"
+satosa__docker_data_dir: "{{ satosa__data_dir }}"
+satosa__docker_volumes:
+  - "{{ satosa__data_dir }}:{{ satosa__docker_data_dir }}"
+# Where to save satosa metadata
+satosa__docker_satosa_metadata: satosa-metadata
+satosa__docker_env_variables:
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+  DATA_DIR: "{{ satosa__docker_data_dir }}"
+  METADATA_DIR: "{{ satosa__docker_data_dir }}/{{ satosa__docker_satosa_metadata }}"
+  PROXY_PORT: "{{ satosa__docker_container_port }}"
+  OPTION_DATA_DIR: "{{ satosa__data_dir }}"
+satosa__docker_interactive: no
+
+# Run SATOSA on a docker container
+satosa__run_docker: no
+# Run SATOSA as a systemd service
+satosa__run_service: yes
+
+
+satosa__base_url: "https://{{ inventory_hostname }}"
+satosa__cookie_state_name: "SATOSA_STATE"
+satosa__context_state_delete: yes
+satosa__state_encryption_key: "asdASD123"
+satosa__logging_level: DEBUG
+
+# Copy oidc_client_db.json from local to the remote server on {{satosa__data_dir}}/{{satosa__oidc_client_db_path}}
+satosa__oidc_client_db_path:
+  src:
+  dest:
+
+# Frontend plugins
+satosa__frontends:
+  - template_file: etc/satosa/plugins/frontends/saml2_frontend.yaml.j2
+    conf_file_name: saml2_frontend.yaml
+    name: Saml2IDP
+    idp_config:
+      organization:
+        display_name: "CEF-eid Proxy"
+        name: "CEF-eid Proxy"
+        url: "https://{{ inventory_hostname }}"
+      contact_person:
+        - contact_type: "technical"
+          email_address:
+          given_name: "Technical"
+        - contact_type: "support"
+          email_address:
+          given_name: "Support"
+      entityid: <base_url>/<name>/proxy.xml
+      metadata:
+        remote:
+          - url: https://samltest.id/saml/sp
+            node_name: urn:oasis:names:tc:SAML:2.0:metadata:EntityDescriptor
+      service:
+        idp:
+          name: Proxy IdP
+          scopes:
+            - "{{ inventory_hostname }}"
+          policy:
+            default:
+              sign_assertion: true
+    endpoints:
+      single_sign_on_service:
+        'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect': sso/redirect
+        'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST': sso/post
+  # - template_file: etc/satosa/plugins/frontends/openid_connect_frontend.yaml.j2
+  #   conf_file_name: openid_connect_frontend.yaml
+  #   name: OIDC
+  #   db_uri:
+  #   client_db_path: "{{ satosa__oidc_client_db_path }}"
+  #   signing_key_path: certs/frontends.key
+  #   provider:
+  #     client_registration_supported: no
+  #     response_types_supported: ["code", "id_token token"]
+  #     subject_types_supported: ["pairwise"]
+  #     scopes_supported: ["openid", "email"]
+  - template_file: etc/satosa/plugins/frontends/ping_frontend.yaml.j2
+    conf_file_name: ping_frontend.yaml
+
+# Backend plugins
+satosa__backends:
+  - template_file: etc/satosa/plugins/backends/saml2_backend.yaml.j2
+    conf_file_name: saml2_backend.yaml
+    name: Saml2SP
+    sp_config:
+      organization:
+        display_name: "Satosa SP"
+        name: "SATOSA Proxy SP"
+        url: "{{ inventory_hostname }}"
+      contact_person:
+        - contact_type: "technical"
+          email_address: "mailto:noreply@grnet.gr"
+          given_name: "John Doe"
+      entityid: <base_url>/<name>/metadata.xml
+      metadata:
+        remote:
+          - url: https://samltest.id/saml/idp
+            node_name: urn:oasis:names:tc:SAML:2.0:metadata:EntityDescriptor
+    service:
+      required_attributes: []
+      optional_attributes: []
+      endpoints:
+          assertion_consumer_service:
+            - "[<base_url>/<name>/acs/post, 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST']"
+            - "[<base_url>/<name>/acs/redirect, 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect']"
+          discovery_response:
+            - "[<base_url>/<name>/disco, 'urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol']"
+  # - template_file: etc/satosa/plugins/backends/openid_backend.yaml.j2
+  #   conf_file_name: openid_backend.yaml
+  #   name: openid_connect
+  #   provider_metadata:
+  #     issuer: "{{ inventory_hostname }}"
+  #   client:
+  #     client_metadata:
+  #       client_id: satosa
+  #       contacts: [ops@example.com]
+  # - template_file: etc/satosa/plugins/backends/github_backend.yaml.j2
+  #   conf_file_name: github_backend.yaml
+  #   name: github
+  #   authz_path: github/auth/callback
+  #   base_url: <base_url>
+  #   client_id: asdfghj
+  #   client_secret: asdsajdjhasgfas
+  #   scopes:
+  #     - 'user'
+  #   response_type: code
+
+# Microservices plugins
+satosa__micro_services:
+  - template_file: etc/satosa/plugins/micro_services/static_attributes.yaml.j2
+    conf_file_name: static_attributes.yaml
+    attributes: []
+  - template_file: etc/satosa/plugins/micro_services/hasher.yaml.j2
+    conf_file_name: hasher.yaml
+  - template_file: etc/satosa/plugins/micro_services/custom_routing.yaml.j2
+    conf_file_name: custom_routing.yaml
+    requester_mapping:
+      foo: bar

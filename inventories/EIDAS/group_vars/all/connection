@@ -1,0 +1,6 @@
+ansible_connection: ssh
+ansible_user: "{{ core__ansible_control_user_name }}"
+ansible_become: true
+ansible_become_flags: '-HE'
+ansible_become_method: sudo
+anslble_become_user: root

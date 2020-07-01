@@ -1,0 +1,115 @@
+{{ ansible_managed | comment }}
+
+module: satosa.frontends.saml2.SAMLFrontend
+name: {{ item.name }}
+config:
+  attribute_profile: {{ item.attribute_profile | d("saml") }}
+  entityid_endpoint: true
+  idp_config:
+    entityid: {{ item.idp_config.entityid | d("<base_url>/<name>/proxy.xml") }}
+    organization:
+      display_name:
+        {{ item.idp_config.organization.display_name | to_json }}
+      name:
+        {{ item.idp_config.organization.name | to_json }}
+      url:
+        {{ item.idp_config.organization.url | to_json }}
+    contact_person:
+{% for contact_person in item.idp_config.contact_person %}
+      - contact_type: {{ contact_person.contact_type }}
+        email_address: {{ contact_person.email_address }}
+        given_name: {{ contact_person.given_name }}
+{% endfor %}
+
+{% if item.idp_config.key_file is defined and item.idp_config.cert_file is defined %}
+    key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ item.idp_config.key_file }}"
+    cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ item.idp_config.cert_file }}"
+{% else %}
+    key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ satosa__frontends_cert_name }}.key"
+    cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ satosa__frontends_cert_name }}.crt"
+{% endif %}
+{% if item.idp_config.encryption_keypairs is defined %}
+    encryption_keypairs:
+{%   for key_pair in item.idp_config.encryption_keypairs %}
+      - key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ key_pair.key_file }}"
+        cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ key_pair.cert_file }}"
+{%   endfor %}
+{% endif %}
+    metadata:
+{% if item.idp_config.metadata.local | d() %}
+      local:
+{%   for metadata in item.idp_config.metadata.local %}
+        - "{{ satosa__local_metadata_dir }}/{{ metadata }}"
+{%   endfor %}
+{% endif %}
+{% if item.idp_config.metadata.remote | d() %}
+      remote:
+{%   for metadata in item.idp_config.metadata.remote %}
+        - url: "{{ metadata.url }}"
+{%     if metadata.cert | d() %}
+          cert: "{{ metadata.cert }}"
+{%     endif %}
+{%     if metadata.check_validity | d() %}
+          check_validity: "{{ metadata.check_validity }}"
+{%     endif %}
+{%     if metadata.node_name | d() %}
+          node_name: "{{ metadata.node_name }}"
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% if item.idp_config.metadata.mdq | d() %}
+      mdq:
+{%   for metadata in item.idp_config.metadata.mdq %}
+        - url: "{{ metadata.url }}"
+{%     if metadata.cert | d() %}
+          cert: "{{ metadata.cert }}"
+{%     endif %}
+{%   endfor %}
+{% endif %}
+
+    disable_ssl_certificate_validation: {{ item.idp_config.disable_ssl_certificate_validation | d(False) }}
+
+    service:
+      idp:
+{% if item.idp_config.service.idp.scopes | d(False) %}
+        scope:
+{%   for scope in item.idp_config.service.idp.scopes %}
+          - {{ scope }}
+{%   endfor %}
+{% endif %}
+        endpoints:
+          single_sign_on_service: []
+        name: {{ item.idp_config.service.idp.name }}
+        name_id_format: ['urn:oasis:names:tc:SAML:2.0:nameid-format:persistent', 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient']
+        want_authn_requests_signed: {{ item.idp_config.service.idp.policy.want_authn_requests_signed | d(False) }}
+        policy:
+          default:
+            sign_assertion: {{ item.idp_config.service.idp.policy.sign_assertion | d(False)}}
+            attribute_restrictions: null
+            fail_on_missing_requested: false
+            lifetime:
+              minutes: {{ item.idp_config.service.idp.lifetime.minutes | d('15') }}
+            name_form: urn:oasis:names:tc:SAML:2.0:attrname-format:uri
+            digest_alg: "{{ item.idp_config.service.idp.digest_alg | d('DIGEST_SHA256') }}"
+            sig_default: "{{ item.idp_config.service.idp.sig_default | d('SIG_RSA_SHA256') }}"
+{% if item.idp_config.service.idp.policy | d(False) %}
+            entity_category:
+{%   for entity_category in item.idp_config.service.idp.policy %}
+              - {{ entity_category }}
+{%   endfor %}
+{% endif %}
+
+{% if item.acr_mapping | d(False) %}
+  acr_mapping:
+{%   for domain, level in item.acr_mapping.items() %}
+    "{{ domain }}":
+      {{ level | to_yaml(indent=6) }}
+{%   endfor %}
+{% endif %}
+  endpoints:
+{% for service, endpoints in item.endpoints.items() %}
+    {{ service }}:
+{%   for binding, endpoint in endpoints.items() %}
+      "{{ binding }}": {{ endpoint }}
+{%   endfor %}
+{% endfor %}

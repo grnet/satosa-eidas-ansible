@@ -1,0 +1,10 @@
+core__root_ssh_key: ''
+core__add_root_key: False
+core__admin_group: admins
+
+
+core__ansible_control_user_name: ansible
+core__ansible_control_user_ssh_key: ''
+core__add_ansible_control_user: True
+
+core__timezone: ''

@@ -1,0 +1,46 @@
+{{ ansible_managed | comment }}
+
+module: satosa.frontends.openid_connect.OpenIDConnectFrontend
+name: {{ item.name }}
+config:
+{% if item.signing_key_path | d(false) %}
+  signing_key_path: {{ item.signing_key_path }}
+{% endif %}
+{% if item.db_uri | d(false) %}
+  db_uri: {{ item.db_uri }}
+{% endif %}
+{% if item.client_db_path | d(false) %}
+  client_db_path: {{ item.client_db_path.dest }}
+{% endif %}
+  provider:
+    client_registration_supported: {{ item.provider.client_registration_supported | d(no) }}
+{% if item.provider.response_types_supported | d(false) %}
+    response_types_supported:
+{%   for response_type in item.provider.response_types_supported %}
+      - {{ response_type }}
+{%   endfor %}
+{% endif %}
+{% if item.provider.subject_types_supported | d(false) %}
+    subject_types_supported:
+{%   for subject_type in item.provider.subject_types_supported %}
+      - {{ subject_type }}
+{%   endfor %}
+{% endif %}
+{% if item.provider.refresh_token_lifetime | d(false) %}
+    refresh_token_lifetime: {{ item.provider.refresh_token_lifetime }}
+{% endif %}
+{% if item.provider.scopes_supported | d(false) %}
+    scopes_supported:
+{%   for scope in item.provider.scopes_supported %}
+      - {{ scope }}
+{%   endfor %}
+{% endif %}
+{% if item.provider.extra_scopes | d(false) %}
+    extra_scopes:
+{%   for scope, claims in item.provider.extra_scopes.items() %}
+      {{ scope }}:
+{%     for claim in claims %}
+        - {{ claim }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}

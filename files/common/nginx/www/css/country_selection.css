@@ -1,0 +1,120 @@
+body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.428571429;
+      color: #333333;
+}
+/* ///  DECORATION CSS ///  */
+.cont_select_center { 
+      position: absolute;
+      left: 50%;
+      top:50%;
+      margin-top: -30px;
+      margin-left: -150px;
+}
+.cont_heg_50 {
+      position: absolute;
+      height: 50%;
+      left: 0;
+      top: 0;
+      width: 100%;
+      background-color: #e5e5e5!important;
+}
+/* ///  END DECORATION CSS  ///  */
+.logo{
+      position: relative;
+      left:45%;
+      background: url('https://grnet.gr/wp-content/uploads/sites/13/2016/04/GRNET_Logo_Transparent-e1431694322566-1.png') no-repeat  center;
+      background-size: 120px;
+      width: 130px;
+      height: 100px;
+      z-index: 1000;
+}
+.corner-ribbon {
+      width: 200px;
+      background: #e43;
+      position: absolute;
+      top: 25px;
+      left: -50px;
+      text-align: center;
+      line-height: 40px;
+      letter-spacing: 1px;
+      color: #f0f0f0;
+      transform: rotate(-45deg);
+      -webkit-transform: rotate(-45deg);
+      z-index: 1000;
+}
+#footer {
+      border-top: #e5e5e5 solid 1px;
+      position: absolute;
+      bottom: 0;
+      width: 99%;
+      height: 40px;
+}
+/* --select -- */
+.selecionado_opcion {
+      padding: 20px 2%;
+      width: 96%;
+      display: block;
+      margin: 0px;
+      cursor: pointer;
+}
+div.label{
+      margin-top: -25px;
+}
+label{
+      font-weight: 300;
+      font-size: 20px;
+      text-transform: none !important;
+}
+.styled-select {
+      background: url('../icons/arrow_right.png') no-repeat 96% 0;
+      height: 29px;
+      overflow: hidden;
+      width: 240px;
+      margin-top: 10px;
+}
+.styled-select select {
+      background: transparent;
+      border: none;
+      font-size: 14px;
+      height: 29px;
+      padding: 5px; /* If you add too much padding here, the options won't show in IE */
+      width: 268px;
+}
+.styled-select.slate {
+      background: url('../icons/arrow.png') no-repeat right center white;
+      height: 33px;
+      width: 240px;
+}
+.styled-select.slate select {
+      border: 1px solid #ccc;
+      font-size: 16px;
+      height: 33px;
+      width: 268px;
+}
+.button_base {
+      margin: 0;
+      border: 0;
+      font-size: 14px;
+      position: relative;
+      top: 50%;
+      left: 50%;
+      margin-top: 25px;
+      margin-left: -40px;
+      width: 160px;
+      height: 40px;
+      text-align: center;
+      box-sizing: border-box;
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      -webkit-user-select: none;
+      cursor: default;
+}
+/* ### ### ### 01 */
+.b01_simple_rollover {
+      color: #ffffff;
+      border: #e5e5e5 solid 2px;
+      padding: 10px;
+      background-color: #349bdb;
+}

@@ -1,0 +1,131 @@
+
+# - name: Merge ferm configuration directories
+#   set_fact:
+#     ferm__rules_dirs: "{{hostvars[inventory_hostname][item] | union(ferm__rules_dirs|default([]))}}"
+#   with_items: "{{ hostvars[inventory_hostname].keys() | select('match', '.*ferm__rules_dirs_to_merge$') | list}}"
+
+  # when: item is defined and item|regex_search('ferm__rules_dirs_to_merge$')
+  # with_items: "{{ hostvars[inventory_hostname].keys() }}"
+  #  when: item is defined and item|regex_search('ferm__rules_dirs_to_merge$')
+
+- block:
+  - name: Ensure ferm is installed
+    package:
+      name: '{{ item }}'
+      state: 'present'
+    with_flattened:
+      - '{{ ferm__base_packages }}'
+
+  - name: Make sure required directories exist
+    file:
+      path: '{{ item }}'
+      state: 'directory'
+      owner: 'root'
+      group: '{{ferm__dir_group}}'
+      mode: '2750'
+    with_items:
+      - "{{ferm__base_dir}}"
+      - "{{ferm__ansible_rules_dir}}"
+      - "{{ferm__manual_rules_dir}}"
+      - "{{ferm__defs_dir}}"
+    when: not ferm__with_puppet
+
+  - name: Make sure required directories exist
+    file:
+      path: '{{ item }}'
+      state: 'directory'
+      owner: 'root'
+      group: '{{ferm__dir_group}}'
+      mode: '2750'
+    with_items:
+      - "{{ferm__defs_dir}}"
+    when: ferm__with_puppet
+
+  - name: Make sure ansible rules directories exist
+    file:
+      path: '{{ferm__ansible_rules_dir}}/{{ item }}'
+      state: 'directory'
+      owner: 'root'
+      group: '{{ferm__dir_group}}'
+      mode: '2750'
+    with_items: "{{ferm__rules_dirs}}"
+
+  - name: Gather current rules directories
+    find:
+      path: "{{ ferm__ansible_rules_dir }}"
+    register: current_ansible_dirs
+
+  - name: Remove obsolete rules directories
+    file:
+      path: '{{ferm__ansible_rules_dir}}/{{ item }}'
+      state: 'absent'
+    with_items: "{{ current_ansible_dirs.files | map(attribute='path') | map('basename') | list | difference(ferm__rules_dirs|union(ferm__rules_templates.keys()|list)) }}"
+    notify: [ 'Restart ferm' ]
+
+  - name: Gather current defs files
+    find:
+      path: "{{ ferm__defs_dir }}"
+    register: current_defs_files
+
+  - name: Remove obsolete defs files
+    file:
+      path: '{{ferm__defs_dir}}/{{ item }}'
+      state: 'absent'
+    with_items: "{{ current_defs_files.files | map(attribute='path') | map('basename') | list | difference(ferm__defs_templates.keys()) }}"
+    notify: [ 'Restart ferm' ]
+
+  - name: Divert the original ferm configuration file
+    command: dpkg-divert --quiet --local --divert /etc/ferm/ferm.conf.dpkg-divert --rename /etc/ferm/ferm.conf
+    args:
+      creates: '/etc/ferm/ferm.conf.dpkg-divert'
+    when: not ferm__with_puppet
+
+  - name: Configure main ferm config file
+    template:
+      src: 'etc/ferm/ferm.conf.j2'
+      dest: '/etc/ferm/ferm.conf'
+      owner: 'root'
+      group: '{{ferm__dir_group}}'
+      mode: '0640'
+    when: not ferm__with_puppet
+    notify: [ 'Restart ferm' ]
+
+  - name: Create ansible include file
+    template:
+      src: '.{{ ferm__base_dir }}/ansible.conf.j2'
+      dest: '{{ ferm__base_dir }}/{{ ferm__ansible_include }}'
+      owner: 'root'
+      group: '{{ ferm__dir_group }}'
+      mode: '0640'
+    notify: [ 'Restart ferm' ]
+
+  - name: Configure templated ferm defs files
+    template:
+      src: '{{ item.value.template }}'
+      dest: '{{ ferm__defs_dir }}/{{ item.key }}'
+      owner: 'root'
+      group: '{{ferm__dir_group}}'
+      mode: '0640'
+    with_dict: "{{ ferm__defs_templates }}"
+    notify: [ 'Restart ferm' ]
+
+  - name: Configure templated ferm config files
+    template:
+      src: '{{ item.value.template }}'
+      dest: '{{ ferm__ansible_rules_dir }}/{{ item.key }}'
+      owner: 'root'
+      group: '{{ferm__dir_group}}'
+      mode: '0640'
+    with_dict: "{{ ferm__rules_templates }}"
+    notify: [ 'Restart ferm' ]
+
+  when: ferm__enabled|bool
+
+- name: Revert the original configuration file
+  shell: rm -f /etc/ferm/ferm.conf ; dpkg-divert --quiet --local --rename --remove /etc/ferm/ferm.conf
+  args:
+    removes: '/etc/ferm/ferm.conf.dpkg-divert'
+    warn: False
+  when: not ferm__enabled|bool
+
+# vim: ft=ansible

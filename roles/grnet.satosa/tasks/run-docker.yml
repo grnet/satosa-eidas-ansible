@@ -1,0 +1,28 @@
+---
+
+- name: Install docker
+  include_role:
+    name: grnet.docker
+
+- name: Loggin to docker registry
+  docker_login:
+    registry: "{{ satosa__docker_registry }}"
+    username: "{{ satosa__docker_username }}"
+    password: "{{ satosa__docker_password }}"
+  when: satosa__docker_registry_login | d(false)
+
+- name: Get docker image
+  docker_image:
+    name: "{{ satosa__docker_image_name }}"
+    repository: "{{ satosa__docker_repo }}"
+    source: pull
+
+- name: Start docker container
+  docker_container:
+    name: satosa
+    image: "{{ satosa__docker_image_name }}"
+    published_ports: "{{ satosa__docker_host_port }}:{{ satosa__docker_container_port }}"
+    volumes: "{{ satosa__docker_volumes }}"
+    env: "{{ satosa__docker_env_variables }}"
+    interactive: "{{ satosa__docker_interactive | d(false) }}"
+  register: docker_started

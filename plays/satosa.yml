@@ -1,0 +1,8 @@
+---
+
+- hosts: satosa
+  roles:
+    - role: grnet.base
+      tags: ["satosa::grnet:base", "role::grnet:base"]
+    - role: grnet.satosa
+      tags: ["satosa::grnet:satosa", "role::grnet:satosa"]

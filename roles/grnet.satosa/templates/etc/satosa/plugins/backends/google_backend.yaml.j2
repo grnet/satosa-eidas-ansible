@@ -1,0 +1,29 @@
+{{ ansible_managed | comment }}
+
+module: satosa.backends.openid_connect.OpenIDConnectBackend
+name: {{ item.name }}
+config:
+  provider_metadata:
+    issuer: https://accounts.google.com
+  client:
+    auth_req_params:
+      response_type: code
+      scope: [openid, profile, email]
+    client_metadata:
+      client_id: {{ item.config.client.client_metadata.client_id }}
+      client_secret: {{ item.config.client.client_metadata.client_secret }}
+      redirect_uris: [<base_url>/<name>]
+    userinfo_request_method: GET
+  entity_info:
+    organization:
+      display_name:
+      - ["Google", "en"]
+      name:
+      - ["Google", "en"]
+      url:
+      - ["https://www.google.com/about/", "en"]
+    ui_info:
+      description:
+      - ["Google OP", "en"]
+      display_name:
+      - ["Google", "en"]

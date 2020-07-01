@@ -1,0 +1,41 @@
+{{ ansible_managed | comment }}
+
+module: satosa.backends.oauth.FacebookBackend
+name: {{ item.name }}
+config:
+  authz_page: {{ item.config.authz_path | d('<name>') }}
+  base_url: <base_url>
+  client_config:
+    client_id: {{ item.config.client_config.client_id }}
+  client_secret: {{ item.config.client_secret }}
+  # See https://developers.facebook.com/docs/facebook-login for
+  # information on valid values for auth_type
+  auth_type: []
+  scope:
+{% for scope in item.config.scopes | d(['email']) %}
+    - {{ scope }}
+{% endfor %}
+{% if item.config.fields | d(False) %}
+  fields:
+{%   for field in item.config.fields %}
+    - {{ field }}
+{%   endfor %}
+{% endif %}
+  response_type: {{ item.config.response_type | d('code') }}
+  server_info:
+    authorization_endpoint: 'https://www.facebook.com/dialog/oauth'
+    token_endpoint: 'https://graph.facebook.com/v3.3/oauth/access_token'
+    graph_endpoint: 'https://graph.facebook.com/v3.3/me'
+  entity_info:
+    organization:
+      display_name:
+      - ["Facebook", "en"]
+      name:
+      - ["Facebook", "en"]
+      url:
+      - ["https://www.facebook.com/", "en"]
+    ui_info:
+      description:
+      - ["Facebook oauth", "en"]
+      display_name:
+      - ["Facebook", "en"]

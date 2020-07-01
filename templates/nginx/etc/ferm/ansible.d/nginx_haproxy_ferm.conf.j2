@@ -1,0 +1,10 @@
+{{ managed_by_ansible | comment}}
+
+{% if nginx__http_port | d(false) %}
+&R_V4_SERVICE(tcp, {{ nginx__http_port }}, $HAPROXY_HOSTS_V4);
+&R_V6_SERVICE(tcp, {{ nginx__http_port }}, $HAPROXY_HOSTS_V6);
+{% endif %}
+{% if nginx__https_port | d(false) %}
+&R_V4_SERVICE(tcp, {{ nginx__https_port }}, $HAPROXY_HOSTS_V4);
+&R_V6_SERVICE(tcp, {{ nginx__https_port }}, $HAPROXY_HOSTS_V6);
+{% endif %}

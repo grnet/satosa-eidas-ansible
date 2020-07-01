@@ -1,0 +1,121 @@
+{{ ansible_managed | comment }}
+
+module: satosa.backends.saml2.SAMLBackend
+name: {{ item.name }}
+config:
+  entityid_endpoint: true # this will expose the xml metadata
+  mirror_force_authn: no
+  memorize_idp: no
+  use_memorized_idp_when_force_authn: no
+{% if item.disco_srv | d() %}
+  disco_srv: {{ item.disco_srv }}
+{% endif %}
+
+  sp_config:
+    entityid: {{ item.sp_config.entityid | d("<base_url>/<name>/proxy.xml") }}
+    organization:
+      display_name:
+{% for display_name in item.sp_config.organization.display_name %}
+        - {{ display_name | to_yaml }}
+{%- endfor %}
+      name:
+{% for name in item.sp_config.organization.name %}
+        - {{ name | to_yaml }}
+{%- endfor %}
+      url:
+{% for url in item.sp_config.organization.url %}
+        - {{ url | to_yaml }}
+{%- endfor %}
+    contact_person:
+{% for contact_person in item.sp_config.contact_person %}
+      - contact_type: {{ contact_person.contact_type }}
+        email_address: {{ contact_person.email_address }}
+{%   if contact_person.given_name is defined %}
+        given_name: {{ contact_person.given_name }}
+{%   endif %}
+{%   if contact_person.company is defined %}
+        company: {{ contact_person.company }}
+{%   endif %}
+{%   if contact_person.telephone_number is defined %}
+        telephone_number:
+{%     for telephone_number in contact_person.telephone_number %}
+          - {{ telephone_number }}
+{%     endfor %}
+{%   endif %}
+{% endfor %}
+{% if item.sp_config.key_file is defined and item.sp_config.cert_file is defined %}
+    key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ item.sp_config.key_file }}"
+    cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ item.sp_config.cert_file }}"
+{% else %}
+    key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ satosa__backends_cert_name }}.key"
+    cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ satosa__backends_cert_name }}.crt"
+{% endif %}
+{% if item.sp_config.encryption_keypairs is defined %}
+    encryption_keypairs:
+{%   for key_pair in item.sp_config.encryption_keypairs %}
+      - key_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ key_pair.key_file }}"
+        cert_file: "{{ satosa__data_dir }}/{{ satosa__satosa_certs_dir }}/{{ key_pair.cert_file }}"
+{%   endfor %}
+{% endif %}
+
+{% if item.sp_config.entity_category | d() %}
+    entity_category:
+{%   for entity_category in item.sp_config.entity_category %}
+      - {{ entity_category }}
+{%   endfor %}
+{% endif %}
+
+    disable_ssl_certificate_validation: {{ item.sp_config.disable_ssl_certificate_validation | d(False) }}
+
+    metadata:
+{% if item.sp_config.metadata.local | d() %}
+      local:
+{%   for metadata in item.sp_config.metadata.local %}
+        - "{{ satosa__local_metadata_dir }}/{{ metadata }}"
+{%   endfor %}
+{% endif %}
+{% if item.sp_config.metadata.remote | d() %}
+      remote:
+{%   for metadata in item.sp_config.metadata.remote %}
+        - url: "{{ metadata.url }}"
+{%     if metadata.cert | d() %}
+          cert: "{{ metadata.cert }}"
+{%     endif %}
+{%     if metadata.check_validity | d() %}
+          check_validity: "{{ metadata.check_validity }}"
+{%     endif %}
+{%     if metadata.node_name | d() %}
+          node_name: "{{ metadata.node_name }}"
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% if item.sp_config.metadata.mdq | d() %}
+      mdq:
+{%   for metadata in item.sp_config.metadata.mdq %}
+        - url: "{{ metadata.url }}"
+{%     if metadata.cert | d() %}
+          cert: "{{ metadata.cert }}"
+{%     endif %}
+{%   endfor %}
+{% endif %}
+
+    service:
+      sp:
+        required_attributes: {{ item.service.required_attributes | d([]) | list }}
+        optional_attributes: {{ item.service.optional_attributes | d([]) | list }}
+        allow_unsolicited: true
+        name_id_format: {{ item.service.name_id_format | d('urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified') }}
+        name_id_format_allow_create: false
+        endpoints:
+{% for service, endpoints in item.service.endpoints.items() %}
+          {{ service }}:
+{%   for endpoint in endpoints %}
+            - {{ endpoint }}
+{%   endfor %}
+{% endfor %}
+{% if item.service.ui_info | d(false) %}
+        ui_info:
+{%   for key, value in item.service.ui_info.items() %}
+          {{ key }}: {{ value }}
+{%   endfor %}
+{% endif %}

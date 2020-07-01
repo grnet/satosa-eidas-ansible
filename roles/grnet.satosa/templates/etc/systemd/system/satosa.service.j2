@@ -1,0 +1,23 @@
+{{ ansible_managed | comment }}
+
+[Unit]
+Description={{ satosa__service_description }}
+After=network.target
+
+[Service]
+Type=simple
+User={{ satosa__system_user_name }}
+Group={{ satosa__system_group_name }}
+WorkingDirectory={{ satosa__data_dir }}
+Environment=LC_ALL=C.UTF-8
+Environment=LANG=C.UTF-8
+ExecStart={{satosa__install_path }}/bin/gunicorn -b0.0.0.0:{{ satosa__port }} satosa.wsgi:app
+SyslogIdentifier={{ satosa__service_name }}
+
+# Give a reasonable amount of time for the server to start up/shut down
+TimeoutSec=10
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

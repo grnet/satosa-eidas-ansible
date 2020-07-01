@@ -1,0 +1,22 @@
+---
+
+- name: Set logrotate config
+  template:
+    src: logging-logrotate.conf.j2
+    dest: /etc/logrotate.d/{{ logging__service_name }}
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - Run logrotate
+
+- name: Set rsyslog rule
+  template:
+    src: logging-rsyslog.conf.j2
+    dest: /etc/rsyslog.d/{{ logging__service_name }}.conf
+    owner: root
+    group: root
+    mode: 0644
+  when: logging__run_rsyslog | d(True)
+  notify:
+    - Restart rsyslog

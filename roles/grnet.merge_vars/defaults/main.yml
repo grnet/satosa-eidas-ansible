@@ -1,0 +1,9 @@
+# merge_vars__list_vars_list:
+# merge_vars__dict_vars_list:
+
+merge_vars__merge_suffix: '_to_merge'
+merge_vars__merge_list_suffix: '{{ merge_vars__merge_suffix }}'
+merge_vars__merge_dict_suffix: '{{ merge_vars__merge_suffix }}'
+
+# merge_vars__list_vars: []
+# merge_vars__dict_vars: {}
